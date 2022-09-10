@@ -25,7 +25,7 @@ def find_dataset_using_name(dataset_name):
             dataset = cls
 
     if dataset is None:
-        raise NotImplementedError('In {0}.py, there should be a subclass of BaseDataset with class name that matches {1} in lowercase.'.format(dataset_filename, target_dataset_name))
+        raise NotImplementedError(f'In {dataset_filename}.py, there should be a subclass of BaseDataset with class name that matches {target_dataset_name} in lowercase.')
 
     return dataset
 
@@ -53,7 +53,7 @@ class CustomDatasetDataLoader():
         self.configuration = configuration
         dataset_class = find_dataset_using_name(configuration['dataset_name'])
         self.dataset = dataset_class(configuration)
-        print("dataset [{0}] was created".format(type(self.dataset).__name__))
+        print(f"dataset [{type(self.dataset).__name__}] was created")
 
         # if we use custom collation, define it as a staticmethod in the dataset class
         custom_collate_fn = getattr(self.dataset, "collate_fn", None)

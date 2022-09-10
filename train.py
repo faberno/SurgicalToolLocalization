@@ -22,11 +22,11 @@ def train(config_file, export=True):
     print('Initializing dataset...')
     train_dataset = create_dataset(configuration['train_dataset_params'])
     train_dataset_size = len(train_dataset)
-    print('The number of training samples = {0}'.format(train_dataset_size))
+    print(f'The number of training samples = {train_dataset_size}')
 
     val_dataset = create_dataset(configuration['val_dataset_params'])
     val_dataset_size = len(val_dataset)
-    print('The number of validation samples = {0}'.format(val_dataset_size))
+    print(f'The number of validation samples = {val_dataset_size}')
 
     print('Initializing model...')
     model = create_model(configuration['model_params'])
@@ -70,11 +70,11 @@ def train(config_file, export=True):
         model.post_epoch_callback(epoch, visualizer)
         train_dataset.dataset.post_epoch_callback(epoch)
 
-        print('Saving model at the end of epoch {0}'.format(epoch))
+        print(f'Saving model at the end of epoch {epoch}')
         model.save_networks(epoch)
         model.save_optimizers(epoch)
 
-        print('End of epoch {0} / {1} \t Time Taken: {2} sec'.format(epoch, num_epochs, time.time() - epoch_start_time))
+        print(f'End of epoch {epoch} / {num_epochs} \t Time Taken: {time.time() - epoch_start_time} sec')
 
         model.update_learning_rate() # update learning rates every epoch
 

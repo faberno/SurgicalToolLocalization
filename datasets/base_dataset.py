@@ -5,7 +5,8 @@ from abc import ABC, abstractmethod
 import cv2
 import numpy as np
 import torch.utils.data as data
-from albumentations import Resize, Compose, ToFloat
+from transforms.RandomMasking import RandomMasking
+import torchvision.transforms as T
 
 
 class BaseDataset(data.Dataset, ABC):
@@ -40,13 +41,23 @@ class BaseDataset(data.Dataset, ABC):
         pass
 
 
-def get_transform(opt, method=cv2.INTER_LINEAR):
+def get_transform(opt):
     transform_list = []
-    if 'preprocess' in opt:
-        if 'resize' in opt['preprocess']:
-            transform_list.append(Resize(opt['input_size'][0], opt['input_size'][1], method))
-
-    if 'tofloat' in opt and opt['tofloat'] == True:
-        transform_list.append(ToFloat())
+    if 'transforms' in opt:
+        if 'toTensor' in opt['transforms'] and opt['transforms']['toTensor']:
+            transform_list.append(T.ToTensor)
+        if 'resize' in opt['transforms']:
+            size = opt['transforms']['resize']
+            transform_list.append(T.Resize(size))
+        if 'flip' in opt['transforms']:
+            transform_list.append(T.RandomHorizontalFlip(opt['transforms']['flip']))
+        if 'masking' in opt['transforms']:
+            masking = opt['transforms']['masking']
+            transform_list.append(RandomMasking(*masking, value=opt['mean']))
+        if 'rotation' in opt['transforms']:
+            transform_list.append(T.RandomRotation(opt['transforms']['rotation'],
+                                                   fill=opt['mean']))
+        if 'normalize' in opt['transforms'] and opt['transforms']['normalize']:
+            transform_list.append(T.Normalize(opt['mean'], opt['std']))
     
-    return Compose(transform_list)
+    return T.Compose(transform_list)

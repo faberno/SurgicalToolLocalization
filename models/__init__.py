@@ -47,5 +47,5 @@ def create_model(configuration):
     """
     model = find_model_using_name(configuration['model_name'])
     instance = model(configuration)
-    print("model [{0}] was created".format(type(instance).__name__))
+    print(f"model [{type(instance).__name__}] was created")
     return instance

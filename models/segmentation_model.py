@@ -185,7 +185,7 @@ class Segmentation2DModel(BaseModel):
         metrics['accuracy'] = val_accuracy
 
         visualizer.plot_current_validation_metrics(epoch, metrics)
-        print('Validation accuracy: {0:.3f}'.format(val_accuracy))
+        print(f'Validation accuracy: {val_accuracy:.3f}')
 
         # Here you may do something else with the validation data such as
         # displaying the validation images or calculating the ROC curve

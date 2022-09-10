@@ -19,7 +19,7 @@ def validate(config_file):
     print('Initializing dataset...')
     val_dataset = create_dataset(configuration['val_dataset_params'])
     val_dataset_size = len(val_dataset)
-    print('The number of validation samples = {0}'.format(val_dataset_size))
+    print(f'The number of validation samples = {val_dataset_size}')
 
     print('Initializing model...')
     model = create_model(configuration['model_params'])

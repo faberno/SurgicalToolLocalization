@@ -144,8 +144,8 @@ class Visualizer():
             max_iters: Number of iterations in epoch.
             losses: Training losses stored in the format of (name, float) pairs
         """
-        message = '[epoch: {}/{}, iter: {}/{}] '.format(epoch, max_epochs, iter, max_iters)
+        message = f'[epoch: {epoch}/{max_epochs}, iter: {iter}/{max_iters}] '
         for k, v in losses.items():
-            message += '{0}: {1:.6f} '.format(k, v)
+            message += f'{k}: {v:.6f} '
 
         print(message)  # print the message

@@ -107,7 +107,7 @@ class BaseModel(ABC):
             scheduler.step()
 
         lr = self.optimizers[0].param_groups[0]['lr']
-        print('learning rate = {0:.7f}'.format(lr))
+        print(f'learning rate = {lr:.7f}')
 
 
     def save_networks(self, epoch):
@@ -115,7 +115,7 @@ class BaseModel(ABC):
         """
         for name in self.network_names:
             if isinstance(name, str):
-                save_filename = '{0}_net_{1}.pth'.format(epoch, name)
+                save_filename = f'{epoch}_net_{name}.pth'
                 save_path = os.path.join(self.save_dir, save_filename)
                 net = getattr(self, 'net' + name)
 
@@ -131,12 +131,12 @@ class BaseModel(ABC):
         """
         for name in self.network_names:
             if isinstance(name, str):
-                load_filename = '{0}_net_{1}.pth'.format(epoch, name)
+                load_filename = f'{epoch}_net_{name}.pth'
                 load_path = os.path.join(self.save_dir, load_filename)
                 net = getattr(self, 'net' + name)
                 if isinstance(net, torch.nn.DataParallel):
                     net = net.module
-                print('loading the model from {0}'.format(load_path))
+                print(f'loading the model from {load_path}')
                 state_dict = torch.load(load_path, map_location=self.device)
                 if hasattr(state_dict, '_metadata'):
                     del state_dict._metadata
@@ -148,7 +148,7 @@ class BaseModel(ABC):
         """Save all the optimizers to the disk for restarting training.
         """
         for i, optimizer in enumerate(self.optimizers):
-            save_filename = '{0}_optimizer_{1}.pth'.format(epoch, i)
+            save_filename = f'{epoch}_optimizer_{i}.pth'
             save_path = os.path.join(self.save_dir, save_filename)
 
             torch.save(optimizer.state_dict(), save_path)
@@ -158,9 +158,9 @@ class BaseModel(ABC):
         """Load all the optimizers from the disk.
         """
         for i, optimizer in enumerate(self.optimizers):
-            load_filename = '{0}_optimizer_{1}.pth'.format(epoch, i)
+            load_filename = f'{epoch}_optimizer_{i}.pth'
             load_path = os.path.join(self.save_dir, load_filename)
-            print('loading the optimizer from {0}'.format(load_path))
+            print(f'loading the optimizer from {load_path}')
             state_dict = torch.load(load_path)
             if hasattr(state_dict, '_metadata'):
                 del state_dict._metadata
@@ -178,7 +178,7 @@ class BaseModel(ABC):
                 for param in net.parameters():
                     num_params += param.numel()
                 print(net)
-                print('[Network {0}] Total number of parameters : {1:.3f} M'.format(name, num_params / 1e6))
+                print(f'[Network {name}] Total number of parameters : {(num_params / 1e6):.3f} M')
 
 
     def set_requires_grad(self, requires_grad=False):
@@ -222,7 +222,7 @@ class BaseModel(ABC):
         for name in self.network_names:
             if isinstance(name, str):
                 net = getattr(self, 'net' + name)
-                export_path = os.path.join(self.configuration['export_path'], 'exported_net_{}.pth'.format(name))
+                export_path = os.path.join(self.configuration['export_path'], f'exported_net_{name}.pth')
                 if isinstance(self.input, list): # we have to modify the input for tracing
                     self.input = [tuple(self.input)]
                 traced_script_module = torch.jit.trace(net, self.input)
