@@ -32,12 +32,36 @@ def find_model_using_name(model_name):
         if name.lower() == target_model_name.lower() \
            and issubclass(cls, BaseModel):
             model = cls
+            break
 
     if model is None:
-        print("In %s.py, there should be a subclass of BaseModel with class name that matches %s in lowercase." % (model_filename, target_model_name))
+        print(f"In {model_filename}.py, there should be a subclass of BaseModel with class name "
+              f"that matches {target_model_name} in lowercase.")
         exit(0)
 
     return model
+
+def find_module_using_name(model_name):
+    """Import the modules like resnet, locmap, ...".
+
+        In the file, the class called DatasetNameModel() will
+        be instantiated. It has to be a subclass of BaseModel,
+        and it is case-insensitive.
+    """
+    model_filename = "models.modules"
+    module = None
+    modellib = importlib.import_module(model_filename)
+    for name, cls in modellib.__dict__.items():
+        if name.lower() == model_name.lower():
+            module = cls
+            break
+
+    if module is None:
+        print(f"In {model_filename}.py, there should be a subclass of BaseModel with class name "
+              f"that matches {model_name} in lowercase.")
+        exit(0)
+
+    return module
 
 
 def create_model(configuration):

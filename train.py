@@ -5,6 +5,10 @@ import math
 from models import create_model
 import time
 from utils.visualizer import Visualizer
+import torch
+from datetime import datetime
+import os
+from utils.AP_tester import AP_tester
 
 """Performs training of a specified model.
     
@@ -15,13 +19,22 @@ Input params:
         model-specific settings.
     export: Whether to export the final model (default=True).
 """
-def train(config_file, export=True):
+def train(config_file, export=False):
     print('Reading config file...')
     configuration = parse_configuration(config_file)
+    configuration['checkpoint_folder'] = os.path.join(configuration['model_params']['checkpoint_path'],
+                                                      datetime.now().strftime("%d_%m_%Y-%H:%M"))
+    try:
+        os.makedirs(configuration['checkpoint_folder'])
+    except OSError as exc:
+        print("Could not create checkpoint folder")
 
     print('Initializing dataset...')
     train_dataset = create_dataset(configuration['train_dataset_params'])
     train_dataset_size = len(train_dataset)
+    configuration['model_params']['n_classes'] = train_dataset.dataset.n_classes
+    configuration['model_params']['classes'] = train_dataset.dataset.classes
+    configuration['model_params']['train_weights'] = torch.tensor(train_dataset.dataset.weights)
     print(f'The number of training samples = {train_dataset_size}')
 
     val_dataset = create_dataset(configuration['val_dataset_params'])
@@ -30,15 +43,18 @@ def train(config_file, export=True):
 
     print('Initializing model...')
     model = create_model(configuration['model_params'])
-    model.setup()
+    starting_epoch = model.setup()
+    model = model.to(model.device)
 
     print('Initializing visualization...')
     visualizer = Visualizer(configuration['visualization_params'])   # create a visualizer that displays images and plots
 
-    starting_epoch = configuration['model_params']['load_checkpoint'] + 1
-    num_epochs = configuration['model_params']['max_epochs']
+    print('Initializing AP_Tester...')
+    ap_tester = AP_tester(val_dataset.dataset, model.device)
+    ap_tester.reset()
 
-    for epoch in range(starting_epoch, num_epochs):
+    num_epochs = configuration['model_params']['max_epochs']
+    for epoch in range(starting_epoch + 1, num_epochs + 1):
         epoch_start_time = time.time()  # timer for entire epoch
         train_dataset.dataset.pre_epoch_callback(epoch)
         model.pre_epoch_callback(epoch)
@@ -47,50 +63,44 @@ def train(config_file, export=True):
         train_batch_size = configuration['train_dataset_params']['loader_params']['batch_size']
 
         model.train()
+        model.train_batch_losses = []
+
         for i, data in enumerate(train_dataset):  # inner loop within one epoch
             visualizer.reset()
 
-            model.set_input(data)         # unpack data from dataset and apply preprocessing
-            model.forward()
-            model.backward()
-
-            if i % configuration['model_update_freq'] == 0:
-                model.optimize_parameters()   # calculate loss functions, get gradients, update network weights
+            model.train_minibatch(data)
 
             if i % configuration['printout_freq'] == 0:
-                losses = model.get_current_losses()
-                visualizer.print_current_losses(epoch, num_epochs, i, math.floor(train_iterations / train_batch_size), losses)
-                visualizer.plot_current_losses(epoch, float(i) / math.floor(train_iterations / train_batch_size), losses)
+                visualizer.print_current_train_loss(epoch, num_epochs, i, math.floor(train_iterations / train_batch_size), model.train_batch_losses[-1])
+                # visualizer.plot_current_losses(epoch, float(i) / math.floor(train_iterations / train_batch_size), model.loss)
+        model.train_losses.append(torch.mean(torch.tensor(model.train_batch_losses)).item())
 
         model.eval()
-        for i, data in enumerate(val_dataset):
-            model.set_input(data)
-            model.test()
+        model.test_batch_losses = []
 
-        model.post_epoch_callback(epoch, visualizer)
-        train_dataset.dataset.post_epoch_callback(epoch)
+        for i, data in enumerate(val_dataset):
+            model.test_minibatch(data, ap_tester)
+        AP = ap_tester.run()
+        ap_tester.reset()
+
+        model.test_losses.append((torch.sum(torch.tensor(model.test_batch_losses)) / len(val_dataset)).item())
+        model.APs.append(AP['AP'])
+        model.APs_cw.append(AP['AP_classwise'])
+        visualizer.print_current_epoch_loss(epoch, num_epochs, model, plot=True, AP=AP)
+
+        best = False
+        if (epoch > 1) and (model.test_losses[-1] < min(model.test_losses[:-1])):
+            best = True
 
         print(f'Saving model at the end of epoch {epoch}')
-        model.save_networks(epoch)
-        model.save_optimizers(epoch)
+        model.save_network(epoch, configuration['checkpoint_folder'], best, AP)
 
         print(f'End of epoch {epoch} / {num_epochs} \t Time Taken: {time.time() - epoch_start_time} sec')
 
-        model.update_learning_rate() # update learning rates every epoch
-
-    if export:
-        print('Exporting model')
-        model.eval()
-        custom_configuration = configuration['train_dataset_params']
-        custom_configuration['loader_params']['batch_size'] = 1 # set batch size to 1 for tracing
-        dl = train_dataset.get_custom_dataloader(custom_configuration)
-        sample_input = next(iter(dl)) # sample input from the training dataset
-        model.set_input(sample_input)
-        model.export()
-
-    return model.get_hyperparam_result()
+        model.scheduler.step()
 
 if __name__ == '__main__':
+
     import multiprocessing
     multiprocessing.set_start_method('spawn', True)
 

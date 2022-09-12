@@ -44,8 +44,9 @@ class BaseDataset(data.Dataset, ABC):
 def get_transform(opt):
     transform_list = []
     if 'transforms' in opt:
+        print(opt)
         if 'toTensor' in opt['transforms'] and opt['transforms']['toTensor']:
-            transform_list.append(T.ToTensor)
+            transform_list.append(T.ToTensor())
         if 'resize' in opt['transforms']:
             size = opt['transforms']['resize']
             transform_list.append(T.Resize(size))

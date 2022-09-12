@@ -56,16 +56,16 @@ class m2cai16Dataset(BaseDataset):
 
     def __getitem__(self, idx):
         file = self.files[idx]
-        gt_label = torch.from_numpy(file['labels']).float()
+        target = torch.from_numpy(file['labels']).float()
         img = Image.open(os.path.join(
             self.image_path, file["file"] + '.jpg')).convert('RGB')
         if self.transform:
             img = self.transform(img)
-        target = {'gt': gt_label}
+        if len(img.shape) == 4:
+            img = img.squeeze(0)
+
         if self.set in ('val', 'test'):
-            target['bb'] = file['objects']
-            target['bb_label'] = file['object_labels']
-            return img, target
+            return img, target, file['objects']
         return img, target
 
     def __len__(self):
@@ -89,7 +89,6 @@ class m2cai16Dataset(BaseDataset):
 
                     all_objects = tree.findall('object')
                     objects = []
-                    object_labels = []
                     resize = self.resize
                     for i, obj in enumerate(all_objects):
                         tool_id = self.classes[obj.find('name').text]
@@ -105,20 +104,30 @@ class m2cai16Dataset(BaseDataset):
                             xmin = floor(xmin * (resize[1] / size[1]))
                             ymax = floor(ymax * (resize[0] / size[0]))
                             xmax = floor(xmax * (resize[1] / size[1]))
-                        objects.append(torch.tensor([xmin, ymin, xmax, ymax], dtype=torch.float))
-                        object_labels.append(tool_id)
+                        objects.append(torch.tensor([tool_id, xmin, ymin, xmax, ymax], dtype=torch.float))
 
                     if resize is not None:
                         size = resize
                     element = {'file': name,
                                'labels': class_labels,
                                'size': size,
-                               'objects': objects,
-                               'object_labels': object_labels}
+                               'objects': objects}
                     dataset_elements.append(element)
         else:
             raise ValueError(f'Set file {filename} does not exist')
         return dataset_elements
+
+    def collate_fn(self, data):
+        if len(data[0]) == 3:
+            imgs, targets, bbox = zip(*data)
+            imgs = torch.stack(imgs)
+            targets = torch.stack(targets)
+            return imgs, targets, bbox
+        else:
+            imgs, targets = zip(*data)
+            imgs = torch.stack(imgs)
+            targets = torch.stack(targets)
+            return imgs, targets.long()
 
 
 

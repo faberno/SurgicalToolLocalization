@@ -2,8 +2,8 @@ import numpy as np
 import sys
 from subprocess import Popen, PIPE
 import utils
-import visdom
-
+# import visdom
+import matplotlib.pyplot as plt
 
 class Visualizer():
     """This class includes several functions that can display images and print logging information.
@@ -18,11 +18,6 @@ class Visualizer():
         self.configuration = configuration  # cache the option
         self.display_id = 0
         self.name = configuration['name']
-
-        self.ncols = 0
-        self.vis = visdom.Visdom()
-        if not self.vis.check_connection():
-            self.create_visdom_connections()
 
 
     def reset(self):
@@ -40,7 +35,7 @@ class Visualizer():
         Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
 
 
-    def plot_current_losses(self, epoch, counter_ratio, losses):
+    def plot_current_losses(self, epoch, counter_ratio, loss):
         """Display the current losses on visdom display: dictionary of error labels and values.
 
         Input params:
@@ -49,9 +44,9 @@ class Visualizer():
             losses: Training losses stored in the format of (name, float) pairs.
         """
         if not hasattr(self, 'loss_plot_data'):
-            self.loss_plot_data = {'X': [], 'Y': [], 'legend': list(losses.keys())}
+            self.loss_plot_data = {'X': [], 'Y': [], 'legend': ['Loss']}
         self.loss_plot_data['X'].append(epoch + counter_ratio)
-        self.loss_plot_data['Y'].append([losses[k] for k in self.loss_plot_data['legend']])
+        self.loss_plot_data['Y'].append([loss.item()])
         x = np.squeeze(np.stack([np.array(self.loss_plot_data['X'])] * len(self.loss_plot_data['legend']), 1), axis=1)
         y = np.squeeze(np.array(self.loss_plot_data['Y']), axis=1)
         try:
@@ -134,7 +129,7 @@ class Visualizer():
             self.create_visdom_connections()
 
 
-    def print_current_losses(self, epoch, max_epochs, iter, max_iters, losses):
+    def print_current_train_loss(self, epoch, max_epochs, iter, max_iters, loss):
         """Print current losses on console.
 
         Input params:
@@ -144,8 +139,46 @@ class Visualizer():
             max_iters: Number of iterations in epoch.
             losses: Training losses stored in the format of (name, float) pairs
         """
-        message = f'[epoch: {epoch}/{max_epochs}, iter: {iter}/{max_iters}] '
-        for k, v in losses.items():
-            message += f'{k}: {v:.6f} '
-
+        message = f'[epoch: {epoch}/{max_epochs}, iter: {iter}/{max_iters}] Train Loss: {loss:.6f}'
         print(message)  # print the message
+
+
+    def print_current_epoch_loss(self, epoch, max_epochs, model, plot=True, AP=None):
+        """Print current losses on console.
+
+        Input params:
+            epoch: Current epoch.
+            max_epochs: Maximum number of epochs.
+            iter: Iteration in epoch.
+            max_iters: Number of iterations in epoch.
+            losses: Training losses stored in the format of (name, float) pairs
+        """
+        # print("\n---------------------------------------------")
+        # message = f'[epoch: {epoch}/{max_epochs}] Train Loss: {model.train_losses[-1]:.6f} Test Loss: {model.test_losses[-1]:.6f} \n'
+        # if AP is not None:
+        #     message += f'\nAP: {AP["AP"]}, AP(class): {AP["AP_classwise"]}'
+        # print(message)  # print the message
+
+        if plot:
+            plt.plot(model.train_losses, label="train")
+            plt.plot(model.test_losses, label="validation")
+            plt.title('Loss')
+            plt.legend()
+            plt.show()
+
+            classlist = list(model.classes.keys())
+            plt.plot(AP['PR_curve'][1], AP['PR_curve'][0], label="all")
+            for i, curve in enumerate(AP['PR_curve_cw']):
+                plt.plot(curve[1], curve[0], label=classlist[i])
+            plt.title('Precision-Recall')
+            plt.xlim(0, 1)
+            plt.ylim(0, 1)
+            plt.legend()
+            plt.show()
+
+    def plot_loss_curves(self, model):
+        plt.plot(model.train_losses, label="train")
+        plt.plot(model.test_losses, label="validation")
+        # plt.plot(average_precisions, label="val. AP")
+        plt.legend()
+        plt.show()

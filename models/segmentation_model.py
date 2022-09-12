@@ -147,13 +147,13 @@ class Segmentation2DModel(BaseModel):
     def backward(self):
         """Calculate losses; called in every training iteration.
         """
-        self.loss_segmentation = self.criterion_loss(self.output, self.label)
+        self.loss = self.criterion_loss(self.output, self.label, reduction='mean')
 
 
     def optimize_parameters(self):
         """Calculate gradients and update network weights.
         """
-        self.loss_segmentation.backward() # calculate gradients
+        self.loss.backward()  # calculate gradients
         self.optimizer.step()
         self.optimizer.zero_grad()
         torch.cuda.empty_cache()

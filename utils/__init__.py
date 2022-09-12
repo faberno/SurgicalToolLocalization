@@ -4,7 +4,7 @@ import numpy as np
 import os
 from pathlib import Path
 import torch
-from torch.optim import lr_scheduler
+from torch.optim.lr_scheduler import MultiStepLR
 
 
 def transfer_to_device(x, device):
@@ -33,11 +33,11 @@ def parse_configuration(config_file):
 def get_scheduler(optimizer, configuration, last_epoch=-1):
     """Return a learning rate scheduler.
     """
-    if configuration['lr_policy'] == 'step':
-        scheduler = lr_scheduler.StepLR(optimizer, step_size=configuration['lr_decay_iters'], gamma=0.3, last_epoch=last_epoch)
-    else:
-        return NotImplementedError(f'learning rate policy [{configuration["lr_policy"]}] is not '
-                                   f'implemented')
+    optim_config = configuration['optimizer']
+    scheduler = MultiStepLR(optimizer,
+                            milestones=optim_config['lr_milestones'],
+                            gamma=optim_config['lr_milestones'],
+                            last_epoch=last_epoch)
     return scheduler
 
 
