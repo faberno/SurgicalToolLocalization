@@ -9,6 +9,39 @@ from sklearn.metrics import accuracy_score
 import sys
 import torch.optim as optim
 from utils import transfer_to_device
+from utils.peak_stimulation import peak_stimulation
+
+
+def _median_filter(input):
+    batch_size, num_channels, h, w = input.size()
+    threshold, _ = torch.median(input.view(batch_size, num_channels, h * w), dim=2)
+    return threshold.contiguous().view(batch_size, num_channels, 1, 1)
+
+def _mean_filter(input):
+    batch_size, num_channels, h, w = input.size()
+    threshold = torch.mean(input.view(batch_size, num_channels, h * w), dim=2)
+    return threshold.contiguous().view(batch_size, num_channels, 1, 1)
+
+def _max_filter(input):
+    batch_size, num_channels, h, w = input.size()
+    threshold, _ = torch.max(input.view(batch_size, num_channels, h * w), dim=2)
+    return threshold.contiguous().view(batch_size, num_channels, 1, 1)
+
+def find_peaks(crm, upsample_size, aggregation=False, win_size=3, peak_filter=_median_filter):
+    if aggregation:
+        peak_list, aggregation = peak_stimulation(crm, return_aggregation=aggregation, win_size=win_size, peak_filter=peak_filter)
+    else:
+        peak_list = peak_stimulation(crm, return_aggregation=aggregation, win_size=win_size, peak_filter=peak_filter)
+    peak_values = crm[peak_list[:, 0], peak_list[:, 1], peak_list[:, 2], peak_list[:, 3]]
+    upsample = torch.tensor([upsample_size[0] / crm.shape[2], upsample_size[1] / crm.shape[3]])
+    peak_list_upsample = peak_list.float()
+    peak_list_upsample[:, 2:] += 0.5
+    peak_list_upsample[:, 2:] *= upsample[None, :]
+    peak_list = peak_list_upsample.round().int()
+
+    return peak_list, peak_values
+
+
 
 class FullyConvModel(BaseModel):
     def __init__(self, config):
@@ -61,7 +94,19 @@ class FullyConvModel(BaseModel):
         x = input.clone()
         for m in self.model:
             x = m(x)
+        if not self.training:
+            crm = x.clone() # class response maps
         x = self.pooling(x)
+        if not self.training:
+            class_found = torch.sigmoid(x) > 0.5
+            crm[~class_found] = 0
+            # crm -= torch.amin(crm, dim=(2, 3), keepdim=True)
+            crm[crm < 0] = 0
+            crm /= torch.amax(crm, dim=(2, 3), keepdim=True)
+            # crm = F.upsample(crm, size=self.configuration['img_size'], mode='bilinear',
+            #                  align_corners=True)
+            peaks = find_peaks(crm, upsample_size=self.configuration['img_size'])
+            return x, peaks
         return x
 
     # def train_minibatch(self, input):

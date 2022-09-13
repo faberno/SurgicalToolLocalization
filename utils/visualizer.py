@@ -153,11 +153,11 @@ class Visualizer():
             max_iters: Number of iterations in epoch.
             losses: Training losses stored in the format of (name, float) pairs
         """
-        # print("\n---------------------------------------------")
-        # message = f'[epoch: {epoch}/{max_epochs}] Train Loss: {model.train_losses[-1]:.6f} Test Loss: {model.test_losses[-1]:.6f} \n'
-        # if AP is not None:
-        #     message += f'\nAP: {AP["AP"]}, AP(class): {AP["AP_classwise"]}'
-        # print(message)  # print the message
+        print("\n---------------------------------------------")
+        message = f'[epoch: {epoch}/{max_epochs}] Train Loss: {model.train_losses[-1]:.6f} Test Loss: {model.test_losses[-1]:.6f} \n'
+        if AP is not None:
+            message += f'\nAP: {AP["AP"]}, AP(class): {AP["AP_classwise"]}'
+        print(message)  # print the message
 
         if plot:
             plt.plot(model.train_losses, label="train")

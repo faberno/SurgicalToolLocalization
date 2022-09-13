@@ -59,7 +59,10 @@ class BaseModel(nn.Module):
         with torch.no_grad():
             output = self(data)
             ap_tester.update(output)
-            loss = self.criterion_loss(output, label, weight=self.train_weights, reduction='sum')
+            if len(output) != 1:
+                loss = self.criterion_loss(output[0], label, weight=self.train_weights, reduction='sum')
+            else:
+                loss = self.criterion_loss(output, label, weight=self.train_weights, reduction='sum')
         self.test_batch_losses.append(loss.item())
 
     def set_input(self, input):
@@ -85,14 +88,15 @@ class BaseModel(nn.Module):
         """Load and print networks; create schedulers.
         """
         if self.configuration['load_checkpoint']:
-            checkpoint_path = os.path.join(self.configuration['checkpoint_path'],
-                                           self.configuration['load_checkpoint'])
-            checkpoint = torch.load(checkpoint_path)
+            checkpoint_path = self.configuration['load_checkpoint']
+            checkpoint = torch.load(checkpoint_path, map_location=self.device)
             self.load_state_dict(checkpoint['model_state_dict'])
             self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
             self.scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
             self.train_losses = checkpoint['train_losses']
             self.test_losses = checkpoint['test_losses']
+            self.APs = checkpoint['AP_history']
+            self.APs_cw = checkpoint['AP_cw_history']
             return checkpoint['epoch'] + 1
         return 0
 

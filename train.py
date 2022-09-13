@@ -34,6 +34,7 @@ def train(config_file, export=False):
     train_dataset_size = len(train_dataset)
     configuration['model_params']['n_classes'] = train_dataset.dataset.n_classes
     configuration['model_params']['classes'] = train_dataset.dataset.classes
+    configuration['model_params']['img_size'] = train_dataset.dataset.resize
     configuration['model_params']['train_weights'] = torch.tensor(train_dataset.dataset.weights)
     print(f'The number of training samples = {train_dataset_size}')
 
@@ -43,15 +44,14 @@ def train(config_file, export=False):
 
     print('Initializing model...')
     model = create_model(configuration['model_params'])
-    starting_epoch = model.setup()
     model = model.to(model.device)
+    starting_epoch = model.setup()
 
     print('Initializing visualization...')
     visualizer = Visualizer(configuration['visualization_params'])   # create a visualizer that displays images and plots
 
     print('Initializing AP_Tester...')
-    ap_tester = AP_tester(val_dataset.dataset, model.device)
-    ap_tester.reset()
+    ap_tester = AP_tester(val_dataset.dataset, model.device, train_dataset.dataset.resize)
 
     num_epochs = configuration['model_params']['max_epochs']
     for epoch in range(starting_epoch + 1, num_epochs + 1):
@@ -65,21 +65,22 @@ def train(config_file, export=False):
         model.train()
         model.train_batch_losses = []
 
-        for i, data in enumerate(train_dataset):  # inner loop within one epoch
-            visualizer.reset()
-
-            model.train_minibatch(data)
-
-            if i % configuration['printout_freq'] == 0:
-                visualizer.print_current_train_loss(epoch, num_epochs, i, math.floor(train_iterations / train_batch_size), model.train_batch_losses[-1])
-                # visualizer.plot_current_losses(epoch, float(i) / math.floor(train_iterations / train_batch_size), model.loss)
-        model.train_losses.append(torch.mean(torch.tensor(model.train_batch_losses)).item())
+        # for i, data in enumerate(train_dataset):  # inner loop within one epoch
+        #     visualizer.reset()
+        #
+        #     model.train_minibatch(data)
+        #
+        #     if i % configuration['printout_freq'] == 0:
+        #         visualizer.print_current_train_loss(epoch, num_epochs, i, math.floor(train_iterations / train_batch_size), model.train_batch_losses[-1])
+        #         # visualizer.plot_current_losses(epoch, float(i) / math.floor(train_iterations / train_batch_size), model.loss)
+        # model.train_losses.append(torch.mean(torch.tensor(model.train_batch_losses)).item())
 
         model.eval()
         model.test_batch_losses = []
 
         for i, data in enumerate(val_dataset):
             model.test_minibatch(data, ap_tester)
+            if i == 3: break
         AP = ap_tester.run()
         ap_tester.reset()
 

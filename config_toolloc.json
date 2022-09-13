@@ -57,7 +57,7 @@
         },
         "export_path": "",
         "checkpoint_path": "/home/fabian/projects/python/SurgicalToolLocalization/checkpoints",
-        "load_checkpoint": ""
+        "load_checkpoint": "/home/fabian/projects/python/SurgicalToolLocalization/checkpoints/resnet18-locmap-minmax_pooling_S22.pth"
     },
     "visualization_params": {
         "name": "2d segmentation"
