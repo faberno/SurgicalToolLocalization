@@ -1,3 +1,5 @@
+# modified https://github.com/pytorch/vision/blob/main/torchvision/models/vgg.py
+
 from functools import partial
 from typing import Any, cast, Dict, List, Optional, Union
 
