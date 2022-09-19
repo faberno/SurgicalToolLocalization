@@ -16,11 +16,7 @@ __all__ = [
     "VGG11_Weights",
     "VGG11_BN_Weights",
     "VGG16_Weights",
-    "VGG16_BN_Weights",
-    "vgg11",
-    "vgg11_bn",
-    "vgg16",
-    "vgg16_bn",
+    "VGG16_BN_Weights"
 ]
 
 
@@ -71,8 +67,10 @@ def make_layers(cfg: List[Union[str, int]], batch_norm: bool = False, strides=(2
             layers += [nn.MaxPool2d(kernel_size=2, stride=2)]
         else:
             stride = (1, 1)
-            if i == (length - 3) or i == (length - 2):
-                stride = strides
+            if i == (length - 2):
+                stride = strides[0]
+            if i == (length - 1):
+                stride = strides[1]
             v = cast(int, v)
             conv2d = nn.Conv2d(in_channels, v, kernel_size=3, padding=1, stride=stride)
             if batch_norm:
@@ -84,8 +82,8 @@ def make_layers(cfg: List[Union[str, int]], batch_norm: bool = False, strides=(2
 
 
 cfgs: Dict[str, List[Union[str, int]]] = {
-    "vgg11": [64, "M", 128, "M", 256, 256, "M", 512, 512, "M", 512, 512, "M"],
-    "vgg16": [64, 64, "M", 128, 128, "M", 256, 256, 256, "M", 512, 512, 512, "M", 512, 512, 512, "M"],
+    "vgg11": [64, "M", 128, "M", 256, 256, "M", 512, 512, "M", 512, 512],
+    "vgg16": [64, 64, "M", 128, 128, "M", 256, 256, 256, "M", 512, 512, 512, "M", 512, 512, 512],
 }
 
 
@@ -223,112 +221,6 @@ class VGG16_BN_Weights(WeightsEnum):
         },
     )
     DEFAULT = IMAGENET1K_V1
-
-
-
-
-@handle_legacy_interface(weights=("pretrained", VGG11_Weights.IMAGENET1K_V1))
-def vgg11(*, weights: Optional[VGG11_Weights] = None, progress: bool = True, **kwargs: Any) -> VGG:
-    """VGG-11 from `Very Deep Convolutional Networks for Large-Scale Image Recognition <https://arxiv.org/abs/1409.1556>`__.
-
-    Args:
-        weights (:class:`~torchvision.models.VGG11_Weights`, optional): The
-            pretrained weights to use. See
-            :class:`~torchvision.models.VGG11_Weights` below for
-            more details, and possible values. By default, no pre-trained
-            weights are used.
-        progress (bool, optional): If True, displays a progress bar of the
-            download to stderr. Default is True.
-        **kwargs: parameters passed to the ``torchvision.models.vgg.VGG``
-            base class. Please refer to the `source code
-            <https://github.com/pytorch/vision/blob/main/torchvision/models/vgg.py>`_
-            for more details about this class.
-
-    .. autoclass:: torchvision.models.VGG11_Weights
-        :members:
-    """
-    weights = VGG11_Weights.verify(weights)
-
-    return _vgg("A", False, weights, progress, **kwargs)
-
-
-
-@handle_legacy_interface(weights=("pretrained", VGG11_BN_Weights.IMAGENET1K_V1))
-def vgg11_bn(*, weights: Optional[VGG11_BN_Weights] = None, progress: bool = True, **kwargs: Any) -> VGG:
-    """VGG-11-BN from `Very Deep Convolutional Networks for Large-Scale Image Recognition <https://arxiv.org/abs/1409.1556>`__.
-
-    Args:
-        weights (:class:`~torchvision.models.VGG11_BN_Weights`, optional): The
-            pretrained weights to use. See
-            :class:`~torchvision.models.VGG11_BN_Weights` below for
-            more details, and possible values. By default, no pre-trained
-            weights are used.
-        progress (bool, optional): If True, displays a progress bar of the
-            download to stderr. Default is True.
-        **kwargs: parameters passed to the ``torchvision.models.vgg.VGG``
-            base class. Please refer to the `source code
-            <https://github.com/pytorch/vision/blob/main/torchvision/models/vgg.py>`_
-            for more details about this class.
-
-    .. autoclass:: torchvision.models.VGG11_BN_Weights
-        :members:
-    """
-    weights = VGG11_BN_Weights.verify(weights)
-
-    return _vgg("A", True, weights, progress, **kwargs)
-
-
-@handle_legacy_interface(weights=("pretrained", VGG16_Weights.IMAGENET1K_V1))
-def vgg16(*, weights: Optional[VGG16_Weights] = None, progress: bool = True, **kwargs: Any) -> VGG:
-    """VGG-16 from `Very Deep Convolutional Networks for Large-Scale Image Recognition <https://arxiv.org/abs/1409.1556>`__.
-
-    Args:
-        weights (:class:`~torchvision.models.VGG16_Weights`, optional): The
-            pretrained weights to use. See
-            :class:`~torchvision.models.VGG16_Weights` below for
-            more details, and possible values. By default, no pre-trained
-            weights are used.
-        progress (bool, optional): If True, displays a progress bar of the
-            download to stderr. Default is True.
-        **kwargs: parameters passed to the ``torchvision.models.vgg.VGG``
-            base class. Please refer to the `source code
-            <https://github.com/pytorch/vision/blob/main/torchvision/models/vgg.py>`_
-            for more details about this class.
-
-    .. autoclass:: torchvision.models.VGG16_Weights
-        :members:
-    """
-    weights = VGG16_Weights.verify(weights)
-
-    return _vgg("D", False, weights, progress, **kwargs)
-
-
-
-@handle_legacy_interface(weights=("pretrained", VGG16_BN_Weights.IMAGENET1K_V1))
-def vgg16_bn(*, weights: Optional[VGG16_BN_Weights] = None, progress: bool = True, **kwargs: Any) -> VGG:
-    """VGG-16-BN from `Very Deep Convolutional Networks for Large-Scale Image Recognition <https://arxiv.org/abs/1409.1556>`__.
-
-    Args:
-        weights (:class:`~torchvision.models.VGG16_BN_Weights`, optional): The
-            pretrained weights to use. See
-            :class:`~torchvision.models.VGG16_BN_Weights` below for
-            more details, and possible values. By default, no pre-trained
-            weights are used.
-        progress (bool, optional): If True, displays a progress bar of the
-            download to stderr. Default is True.
-        **kwargs: parameters passed to the ``torchvision.models.vgg.VGG``
-            base class. Please refer to the `source code
-            <https://github.com/pytorch/vision/blob/main/torchvision/models/vgg.py>`_
-            for more details about this class.
-
-    .. autoclass:: torchvision.models.VGG16_BN_Weights
-        :members:
-    """
-    weights = VGG16_BN_Weights.verify(weights)
-
-    return _vgg("D", True, weights, progress, **kwargs)
-
-
 
 # The dictionary below is internal implementation detail and will be removed in v0.15
 from torchvision.models._utils import _ModelURLs
