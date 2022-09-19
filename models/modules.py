@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from models.backbones.resnet import ResNet,_resnet, BasicBlock, Bottleneck
-
+from models.backbones.vgg import _vggnet
 
 def minmax_pooling(input):
     maxpool = F.max_pool2d(input, input.shape[2:]).squeeze()
@@ -76,3 +76,47 @@ def resnet101(pretrained: bool = False, strides = (2, 2), progress: bool = True,
     """
     net = _resnet("resnet101", Bottleneck, [3, 4, 23, 3], pretrained, strides, progress, **kwargs)
     return fcresnet(net)
+
+
+def fcvgg(model):
+    return model.features
+
+def vgg11(pretrained: bool = False, strides = (2, 2), progress: bool = True, **kwargs: Any) -> ResNet:
+    r"""VGG-11 from `Very Deep Convolutional Networks for Large-Scale Image Recognition <https://arxiv.org/abs/1409.1556>`__.
+
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+        progress (bool): If True, displays a progress bar of the download to stderr
+    """
+    net = _vggnet("vgg11", False, pretrained, strides, progress, **kwargs)
+    return fcvgg(net)
+
+def vgg11_bn(pretrained: bool = False, strides = (2, 2), progress: bool = True, **kwargs: Any) -> ResNet:
+    r"""VGG-11BN from `Very Deep Convolutional Networks for Large-Scale Image Recognition <https://arxiv.org/abs/1409.1556>`__.
+
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+        progress (bool): If True, displays a progress bar of the download to stderr
+    """
+    net = _vggnet("vgg11", True, pretrained, strides, progress, **kwargs)
+    return fcvgg(net)
+
+def vgg16(pretrained: bool = False, strides = (2, 2), progress: bool = True, **kwargs: Any) -> ResNet:
+    r"""VGG-16 from `Very Deep Convolutional Networks for Large-Scale Image Recognition <https://arxiv.org/abs/1409.1556>`__.
+
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+        progress (bool): If True, displays a progress bar of the download to stderr
+    """
+    net = _vggnet("vgg16", False, pretrained, strides, progress, **kwargs)
+    return fcvgg(net)
+
+def vgg16_bn(pretrained: bool = False, strides = (2, 2), progress: bool = True, **kwargs: Any) -> ResNet:
+    r"""VGG-16BN from `Very Deep Convolutional Networks for Large-Scale Image Recognition <https://arxiv.org/abs/1409.1556>`__.
+
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+        progress (bool): If True, displays a progress bar of the download to stderr
+    """
+    net = _vggnet("vgg16", True, pretrained, strides, progress, **kwargs)
+    return fcvgg(net)
