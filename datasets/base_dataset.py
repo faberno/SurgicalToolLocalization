@@ -4,10 +4,10 @@
 from abc import ABC, abstractmethod
 import cv2
 import numpy as np
+import torch
 import torch.utils.data as data
 from transforms.RandomMasking import RandomMasking
 import torchvision.transforms as T
-
 
 class BaseDataset(data.Dataset, ABC):
     """This class is an abstract base class (ABC) for datasets.
@@ -40,6 +40,11 @@ class BaseDataset(data.Dataset, ABC):
         """
         pass
 
+def channelswitcher(x):
+    if len(x.shape) == 4:
+        return x[:, torch.randperm(3)]
+    else:
+        return x[torch.randperm(3)]
 
 def get_transform(opt):
     transform_list = []
@@ -60,5 +65,7 @@ def get_transform(opt):
                                                    fill=opt['mean']))
         if 'normalize' in opt['transforms'] and opt['transforms']['normalize']:
             transform_list.append(T.Normalize(opt['mean'], opt['std']))
-    
+        if 'channelswitcher' in opt['transforms'] and opt['transforms']['channelswitcher']:
+            transform_list.append(channelswitcher)
+
     return T.Compose(transform_list)

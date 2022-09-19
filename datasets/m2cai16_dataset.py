@@ -36,6 +36,8 @@ class m2cai16Dataset(BaseDataset):
 
     n_classes = len(classes)
 
+    inference = True
+
     def __init__(self, configuration):
         super().__init__(configuration)
 
@@ -56,7 +58,7 @@ class m2cai16Dataset(BaseDataset):
 
     def __getitem__(self, idx):
         file = self.files[idx]
-        target = torch.from_numpy(file['labels']).float()
+        target = file['labels']
         img = Image.open(os.path.join(
             self.image_path, file["file"] + '.jpg')).convert('RGB')
         if self.transform:
@@ -64,13 +66,21 @@ class m2cai16Dataset(BaseDataset):
         if len(img.shape) == 4:
             img = img.squeeze(0)
 
-        if self.set in ('val', 'test'):
-            return img, target, file['objects']
+        # if self.set in ('val', 'test'):
+        #     return img, target, file['objects']
         return img, target
 
     def __len__(self):
         # return the size of the dataset
         return len(self.files)
+
+    def get_targets(self):
+        targets = []
+        bboxes = []
+        for f in self.files:
+            targets.append(f['labels'])
+            bboxes.append(torch.stack(f['objects']))
+        return targets, bboxes
 
     def read_annotations(self):
         dataset_elements = []
@@ -79,7 +89,7 @@ class m2cai16Dataset(BaseDataset):
             with open(filename, 'r') as f:
                 for line in f:
                     name = line.split()[0]
-                    class_labels = np.zeros(self.n_classes)
+                    class_labels = torch.zeros(self.n_classes)
                     tree = ET.parse(self.annotation_path + name + '.xml')
 
                     size = tree.find('size')
@@ -128,25 +138,3 @@ class m2cai16Dataset(BaseDataset):
             imgs = torch.stack(imgs)
             targets = torch.stack(targets)
             return imgs, targets.long()
-
-
-
-
-# class Segmentation2DDataset(BaseDataset):
-#     """Represents a 2D segmentation dataset.
-#
-#     Input params:
-#         configuration: Configuration dictionary.
-#     """
-#     def __init__(self, configuration):
-#         super().__init__(configuration)
-#
-#
-#     def __getitem__(self, index):
-#         # get source image as x
-#         # get labels as y
-#         return (x, y)
-#
-#     def __len__(self):
-#         # return the size of the dataset
-#         return 1

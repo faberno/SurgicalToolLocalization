@@ -33,7 +33,7 @@ def find_peaks(crm, upsample_size, aggregation=False, win_size=3, peak_filter=_m
     else:
         peak_list = peak_stimulation(crm, return_aggregation=aggregation, win_size=win_size, peak_filter=peak_filter)
     peak_values = crm[peak_list[:, 0], peak_list[:, 1], peak_list[:, 2], peak_list[:, 3]]
-    upsample = torch.tensor([upsample_size[0] / crm.shape[2], upsample_size[1] / crm.shape[3]])
+    upsample = torch.tensor([upsample_size[0] / crm.shape[2], upsample_size[1] / crm.shape[3]], device=peak_list.device)
     peak_list_upsample = peak_list.float()
     peak_list_upsample[:, 2:] += 0.5
     peak_list_upsample[:, 2:] *= upsample[None, :]
@@ -48,26 +48,26 @@ class FullyConvModel(BaseModel):
         """Initialize the model.
         """
         super().__init__(config)
-        self.model = nn.ModuleList()
+        self.module_list = nn.ModuleList()
 
         self.name = self.create_name(config)
 
         backbone_fn = find_module_using_name(config['backbone']['name'])
-        self.model.append(backbone_fn(pretrained=True, **config['backbone']['options']))
+        self.module_list.append(backbone_fn(pretrained=True, **config['backbone']['options']))
 
         structure = config['structure']
         for m in structure['modules']:
             module = find_module_using_name(m)
             if m == 'locmap':
-                num_features = list(self.model[-1].modules())[-2].out_channels
-                self.model.append(module(num_features, config['n_classes']))
+                num_features = list(self.module_list[-1].modules())[-2].out_channels
+                self.module_list.append(module(num_features, config['n_classes']))
 
         self.pooling = find_module_using_name(structure['pooling'])
 
         self.criterion_loss = F.multilabel_soft_margin_loss
         optim_config = config['optimizer']
-        optim_input = [{'params': self.model[i].parameters(), 'lr': optim_config['lr'][i]}
-                       for i in range(len(self.model))]
+        optim_input = [{'params': self.module_list[i].parameters(), 'lr': optim_config['lr'][i]}
+                       for i in range(len(self.module_list))]
         self.optimizer = optim.SGD(optim_input,
                                    momentum=optim_config['momentum'],
                                    weight_decay=optim_config['weight_decay'])
@@ -92,12 +92,14 @@ class FullyConvModel(BaseModel):
         """Run forward pass.
         """
         x = input.clone()
-        for m in self.model:
+        for m in self.module_list:
             x = m(x)
         if not self.training:
             crm = x.clone() # class response maps
         x = self.pooling(x)
         if not self.training:
+            if len(crm.shape) == 3:
+                crm = crm.unsqueeze(0)
             class_found = torch.sigmoid(x) > 0.5
             crm[~class_found] = 0
             # crm -= torch.amin(crm, dim=(2, 3), keepdim=True)

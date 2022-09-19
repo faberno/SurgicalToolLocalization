@@ -1,7 +1,7 @@
 {
     "train_dataset_params": {
-        "dataset_name": "m2cai16",
-        "dataset_path": "/media/fabian/DATA/m2cai16-tool-locations/m2cai2016",
+        "dataset_name": "surgtoolloc",
+        "dataset_path": "/media/fabian/DATA/surgtoollocsubset/",
         "set": "trainval",
         "loader_params": {
             "batch_size": 2,
@@ -11,16 +11,16 @@
         },
         "transforms": {
             "toTensor": true,
-            "resize": [336, 600],
+            "resize": [420, 600],
             "flip": 0.5,
-            "masking": [0.5, [24, 24]],
+            "masking": [0.5, [30, 30]],
             "rotation": 90,
             "normalize": true
         }
     },
     "val_dataset_params": {
-        "dataset_name": "m2cai16",
-        "dataset_path": "/media/fabian/DATA/m2cai16-tool-locations/m2cai2016",
+        "dataset_name": "surgtoolloc",
+        "dataset_path": "/media/fabian/DATA/surgtoollocsubset/",
         "set": "test",
         "loader_params": {
             "batch_size": 2,
@@ -30,7 +30,7 @@
         },
         "transforms": {
             "toTensor": true,
-            "resize": [336, 600],
+            "resize": [420, 600],
             "normalize": true
         }
     },
@@ -57,7 +57,7 @@
         },
         "export_path": "",
         "checkpoint_path": "/home/fabian/projects/python/SurgicalToolLocalization/checkpoints",
-        "load_checkpoint": "/home/fabian/projects/python/SurgicalToolLocalization/checkpoints/resnet18-locmap-minmax_pooling_S22.pth"
+        "load_checkpoint": ""
     },
     "visualization_params": {
         "name": "2d segmentation"

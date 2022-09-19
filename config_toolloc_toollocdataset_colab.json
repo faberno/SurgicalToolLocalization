@@ -1,0 +1,68 @@
+{
+    "train_dataset_params": {
+        "dataset_name": "surgtoolloc",
+        "dataset_path": "/content/surgtoollocsubset/",
+        "set": "trainval",
+        "loader_params": {
+            "batch_size": 20,
+            "shuffle": true,
+            "num_workers": 2,
+            "pin_memory": true
+        },
+        "transforms": {
+            "toTensor": true,
+            "resize": [420, 600],
+            "flip": 0.5,
+            "masking": [0.5, [30, 30]],
+            "rotation": 90,
+            "normalize": true
+        }
+    },
+    "val_dataset_params": {
+        "dataset_name": "surgtoolloc",
+        "dataset_path": "/content/surgtoollocsubset/",
+        "set": "test",
+        "loader_params": {
+            "batch_size": 20,
+            "shuffle": false,
+            "num_workers": 2,
+            "pin_memory": false
+        },
+        "transforms": {
+            "toTensor": true,
+            "resize": [420, 600],
+            "normalize": true
+        }
+    },
+    "model_params": {
+        "model_name": "fullyconv",
+        "backbone": {
+            "name": "resnet18",
+            "options": {
+                "strides": [2, 2]
+            }
+        },
+        "structure": {
+            "modules": ["locmap"],
+            "pooling": "minmax_pooling",
+            "multimaps": false
+        },
+        "max_epochs": 150,
+        "optimizer": {
+            "lr": [0.1, 0.001],
+            "lr_milestones": [30, 45],
+            "gamma": 0.1,
+            "momentum": 0.9,
+            "weight_decay": 1e-4
+        },
+        "export_path": "",
+        "checkpoint_path": "/content/drive/MyDrive/checkpoints/surgtoolloc",
+        "load_checkpoint": ""
+    },
+    "visualization_params": {
+        "name": "2d segmentation"
+    },
+    "printout_freq": 5,
+    "model_update_freq": 1,
+    "checkpoint_freq": 10
+}

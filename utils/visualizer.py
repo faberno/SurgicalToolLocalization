@@ -143,7 +143,7 @@ class Visualizer():
         print(message)  # print the message
 
 
-    def print_current_epoch_loss(self, epoch, max_epochs, model, plot=True, AP=None):
+    def print_current_epoch_loss(self, epoch=None, max_epochs=None, model=None, plot=True, AP=None):
         """Print current losses on console.
 
         Input params:
@@ -153,28 +153,44 @@ class Visualizer():
             max_iters: Number of iterations in epoch.
             losses: Training losses stored in the format of (name, float) pairs
         """
-        print("\n---------------------------------------------")
-        message = f'[epoch: {epoch}/{max_epochs}] Train Loss: {model.train_losses[-1]:.6f} Test Loss: {model.test_losses[-1]:.6f} \n'
+        message = "\n-------------------------------------------------------------\n"
+        if epoch is not None:
+            message += f'[epoch: {epoch}/{max_epochs}] Train Loss: {model.train_losses[-1]:.6f} Test Loss: {model.test_losses[-1]:.6f} \n'
         if AP is not None:
-            message += f'\nAP: {AP["AP"]}, AP(class): {AP["AP_classwise"]}'
+            message += f'\nDetection AP: {AP["det_AP"]}, AP(class): {AP["det_AP_cw"].tolist()}'
+        if 'loc_AP' in AP:
+            message += f'\nLocalization AP: {AP["loc_AP"]}, AP(class): {list(AP["loc_AP_cw"])}'
+        message += "\n------------------------------------------------------------\n"
         print(message)  # print the message
 
         if plot:
-            plt.plot(model.train_losses, label="train")
-            plt.plot(model.test_losses, label="validation")
-            plt.title('Loss')
-            plt.legend()
-            plt.show()
+            if model is not None:
+                plt.plot(model.train_losses, label="train")
+                plt.plot(model.test_losses, label="validation")
+                plt.title('Loss')
+                plt.legend()
+                plt.show()
 
-            classlist = list(model.classes.keys())
-            plt.plot(AP['PR_curve'][1], AP['PR_curve'][0], label="all")
-            for i, curve in enumerate(AP['PR_curve_cw']):
-                plt.plot(curve[1], curve[0], label=classlist[i])
-            plt.title('Precision-Recall')
-            plt.xlim(0, 1)
-            plt.ylim(0, 1)
-            plt.legend()
-            plt.show()
+            if 'loc_PR_curve' in AP:
+                classlist = list(model.classes.keys())
+                plt.plot(AP['det_PR_curve'][1], AP['det_PR_curve'][0], label="all", linewidth=3, linestyle='dashed')
+                for i, curve in enumerate(AP['det_PR_curve_cw']):
+                    plt.plot(curve[1], curve[0], label=classlist[i])
+                plt.title('Detection Precision-Recall')
+                plt.xlim(0, 1)
+                plt.ylim(0, 1)
+                plt.legend()
+                plt.show()
+
+            if 'loc_PR_curve' in AP:
+                plt.plot(AP['loc_PR_curve'][1], AP['loc_PR_curve'][0], label="all", linewidth=3, linestyle='dashed')
+                for i, curve in enumerate(AP['loc_PR_curve_cw']):
+                    plt.plot(curve[1], curve[0], label=classlist[i])
+                plt.title('Localization Precision-Recall')
+                plt.xlim(0, 1)
+                plt.ylim(0, 1)
+                plt.legend()
+                plt.show()
 
     def plot_loss_curves(self, model):
         plt.plot(model.train_losses, label="train")

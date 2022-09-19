@@ -3,6 +3,11 @@ from datasets import create_dataset
 from utils import parse_configuration
 from models import create_model
 import os
+import torch
+from utils.visualizer import Visualizer
+from utils.AP_tester import AP_tester
+import time
+from tqdm import tqdm
 
 """Performs validation of a specified model.
     
@@ -12,30 +17,51 @@ Input params:
         the system-specific, dataset-specific and 
         model-specific settings.
 """
-def validate(config_file):
+def validate(config_file, export=False):
     print('Reading config file...')
     configuration = parse_configuration(config_file)
 
     print('Initializing dataset...')
     val_dataset = create_dataset(configuration['val_dataset_params'])
     val_dataset_size = len(val_dataset)
+    configuration['model_params']['n_classes'] = val_dataset.dataset.n_classes
+    configuration['model_params']['classes'] = val_dataset.dataset.classes
+    configuration['model_params']['img_size'] = val_dataset.dataset.resize
     print(f'The number of validation samples = {val_dataset_size}')
 
     print('Initializing model...')
     model = create_model(configuration['model_params'])
+    model = model.to(model.device)
     model.setup()
+
+    print('Initializing visualization...')
+    visualizer = Visualizer(configuration['visualization_params'])   # create a visualizer that displays images and plots
+
+    print('Initializing AP_Tester...')
+    ap_tester = AP_tester(val_dataset.dataset, model.device, val_dataset.dataset.resize)
+
+    start_time = time.time()  # timer for entire epoch
+
     model.eval()
+    model.test_batch_losses = []
 
-    model.pre_epoch_callback(configuration['model_params']['load_checkpoint'])
+    print("Validating...")
+    for i, data in tqdm(enumerate(val_dataset)):
+        model.test_minibatch(data, ap_tester)
 
-    for i, data in enumerate(val_dataset):
-        model.set_input(data)  # unpack data from data loader
-        model.test()           # run inference
+    AP = ap_tester.run(compute_AP_loc=True)
 
-    model.post_epoch_callback(configuration['model_params']['load_checkpoint'])
+    visualizer.print_current_epoch_loss(model=model, plot=True, AP=AP)
+
+
+    print(f'Time Taken: {time.time() - start_time}')
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Perform model validation.')
+    import multiprocessing
+
+    multiprocessing.set_start_method('spawn', True)
+
+    parser = argparse.ArgumentParser(description='Perform model training.')
     parser.add_argument('configfile', help='path to the configfile')
 
     args = parser.parse_args()

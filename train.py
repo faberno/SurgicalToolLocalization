@@ -9,7 +9,7 @@ import torch
 from datetime import datetime
 import os
 from utils.AP_tester import AP_tester
-
+from tqdm import tqdm
 """Performs training of a specified model.
     
 Input params:
@@ -51,7 +51,7 @@ def train(config_file, export=False):
     visualizer = Visualizer(configuration['visualization_params'])   # create a visualizer that displays images and plots
 
     print('Initializing AP_Tester...')
-    ap_tester = AP_tester(val_dataset.dataset, model.device, train_dataset.dataset.resize)
+    ap_tester = AP_tester(val_dataset.dataset, model.device, val_dataset.dataset.resize)
 
     num_epochs = configuration['model_params']['max_epochs']
     for epoch in range(starting_epoch + 1, num_epochs + 1):
@@ -65,29 +65,33 @@ def train(config_file, export=False):
         model.train()
         model.train_batch_losses = []
 
-        # for i, data in enumerate(train_dataset):  # inner loop within one epoch
-        #     visualizer.reset()
-        #
-        #     model.train_minibatch(data)
-        #
-        #     if i % configuration['printout_freq'] == 0:
-        #         visualizer.print_current_train_loss(epoch, num_epochs, i, math.floor(train_iterations / train_batch_size), model.train_batch_losses[-1])
-        #         # visualizer.plot_current_losses(epoch, float(i) / math.floor(train_iterations / train_batch_size), model.loss)
-        # model.train_losses.append(torch.mean(torch.tensor(model.train_batch_losses)).item())
+        for i, data in enumerate(train_dataset):  # inner loop within one epoch
+            visualizer.reset()
+
+            model.train_minibatch(data)
+
+            if i % configuration['printout_freq'] == 0:
+                visualizer.print_current_train_loss(epoch, num_epochs, i, math.floor(train_iterations / train_batch_size), model.train_batch_losses[-1])
+        model.train_losses.append(torch.mean(torch.tensor(model.train_batch_losses)).item())
 
         model.eval()
         model.test_batch_losses = []
 
-        for i, data in enumerate(val_dataset):
+        print("Validating...")
+        for i, data in tqdm(enumerate(val_dataset)):
             model.test_minibatch(data, ap_tester)
-            if i == 3: break
-        AP = ap_tester.run()
-        ap_tester.reset()
+        AP_loc = False
+        if epoch % configuration['AP_loc_freq'] == 0:
+            AP_loc = True
+        AP = ap_tester.run(compute_AP_loc=AP_loc)
 
         model.test_losses.append((torch.sum(torch.tensor(model.test_batch_losses)) / len(val_dataset)).item())
-        model.APs.append(AP['AP'])
-        model.APs_cw.append(AP['AP_classwise'])
-        visualizer.print_current_epoch_loss(epoch, num_epochs, model, plot=True, AP=AP)
+        model.det_APs.append(AP['det_AP'])
+        model.det_APs_cw.append(AP['det_AP_cw'])
+        if epoch % configuration['AP_loc_freq'] == 0:
+            model.loc_APs.append(AP['loc_AP'])
+            model.loc_APs_cw.append(AP['loc_AP_cw'])
+        visualizer.print_current_epoch_loss(epoch, num_epochs, model=model, plot=True, AP=AP)
 
         best = False
         if (epoch > 1) and (model.test_losses[-1] < min(model.test_losses[:-1])):
@@ -101,9 +105,6 @@ def train(config_file, export=False):
         model.scheduler.step()
 
 if __name__ == '__main__':
-
-    import multiprocessing
-    multiprocessing.set_start_method('spawn', True)
 
     parser = argparse.ArgumentParser(description='Perform model training.')
     parser.add_argument('configfile', help='path to the configfile')

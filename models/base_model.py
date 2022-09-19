@@ -29,7 +29,8 @@ class BaseModel(nn.Module):
         self.device = torch.device('cuda:0') if self.use_cuda else torch.device('cpu')
         torch.backends.cudnn.benchmark = True
         self.save_dir = configuration['checkpoint_path']
-        self.train_weights = configuration['train_weights'].to(self.device)
+        if 'train_weights' in configuration:
+            self.train_weights = configuration['train_weights'].to(self.device)
 
         self.train_batch_losses = []
         self.test_batch_losses = []
@@ -37,8 +38,11 @@ class BaseModel(nn.Module):
         self.train_losses = []
         self.test_losses = []
 
-        self.APs = []
-        self.APs_cw = []
+        self.det_APs = []
+        self.det_APs_cw = []
+
+        self.loc_APs = []
+        self.loc_APs_cw = []
 
         self.classes = configuration['classes']
 
@@ -60,9 +64,9 @@ class BaseModel(nn.Module):
             output = self(data)
             ap_tester.update(output)
             if len(output) != 1:
-                loss = self.criterion_loss(output[0], label, weight=self.train_weights, reduction='sum')
+                loss = self.criterion_loss(output[0], label, reduction='sum')
             else:
-                loss = self.criterion_loss(output, label, weight=self.train_weights, reduction='sum')
+                loss = self.criterion_loss(output, label, reduction='sum')
         self.test_batch_losses.append(loss.item())
 
     def set_input(self, input):
@@ -95,9 +99,11 @@ class BaseModel(nn.Module):
             self.scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
             self.train_losses = checkpoint['train_losses']
             self.test_losses = checkpoint['test_losses']
-            self.APs = checkpoint['AP_history']
-            self.APs_cw = checkpoint['AP_cw_history']
-            return checkpoint['epoch'] + 1
+            self.det_APs = checkpoint.get('det_AP_history', [])
+            self.det_APs_cw = checkpoint.get('det_AP_cw_history', [])
+            self.loc_APs = checkpoint.get('loc_AP_history', [])
+            self.loc_APs_cw = checkpoint.get('loc_AP_cw_history', [])
+            return checkpoint['epoch']
         return 0
 
         # if last_checkpoint > 0:
@@ -126,8 +132,10 @@ class BaseModel(nn.Module):
             'train_losses': self.train_losses,
             'test_losses': self.test_losses,
             'AP': AP,
-            'AP_history': self.APs,
-            'AP_cw_history': self.APs_cw
+            'det_AP_history': self.det_APs,
+            'det_AP_cw_history': self.det_APs_cw,
+            'loc_AP_history': self.loc_APs,
+            'loc_AP_cw_history': self.loc_APs_cw
         }, save_path)
 
         if best:
@@ -141,8 +149,10 @@ class BaseModel(nn.Module):
                 'train_losses': self.train_losses,
                 'test_losses': self.test_losses,
                 'AP': AP,
-                'AP_history': self.APs,
-                'AP_cw_history': self.APs_cw
+                'det_AP_history': self.det_APs,
+                'det_AP_cw_history': self.det_APs_cw,
+                'loc_AP_history': self.loc_APs,
+                'loc_AP_cw_history': self.loc_APs_cw
             }, save_path)
 
 
