@@ -57,12 +57,13 @@ class BaseModel(nn.Module):
         self.optimizer.step()
         self.optimizer.zero_grad()
 
-    def test_minibatch(self, input, ap_tester):
+    def test_minibatch(self, input, ap_tester=None):
         data = transfer_to_device(input[0], self.device)
         label = transfer_to_device(input[1], self.device)
         with torch.no_grad():
             output = self(data)
-            ap_tester.update(output)
+            if ap_tester is not None:
+                ap_tester.update(output)
             if len(output) != 1:
                 loss = self.criterion_loss(output[0], label, reduction='sum')
             else:
