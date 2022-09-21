@@ -105,7 +105,7 @@
 \smallskip
 }
 
-\vspace{3cm}
+\vspace{2cm}
 
 \textbf{\Large Project Report\\[0.4 cm]	 \large Advanced Machine Learning} % Bachelor-Arbeit 
 
@@ -131,7 +131,9 @@ by\\[0.5cm]
 	\end{tabular}
 \end{table}
 
-\vspace{1cm}
+\vspace{0.5cm}
+\includegraphics[width=0.4cm]{github}\hspace{0.15cm}\href{https://github.com/faberno/SurgicalToolLocalization}{faberno/SurgicalToolLocalization}
+\vfill
 
 \today
 
@@ -141,6 +143,10 @@ by\\[0.5cm]
 \end{titlepage}
 
 \chapter*{Abstract}
+\input{0_abstract/abstract}
+
+\chapter*{Notation}
+\input{0_abstract/notation}
 
 \newpage
 
@@ -160,11 +166,51 @@ by\\[0.5cm]
 % You can either put all the text here or use individual files to store the chapters of your thesis.
 % Below are templates for both alternatives.
 
-\chapter{Introduction}\label{intro}
+\chapter{Introduction}
+\label{chap:intro}
+what is the problem? why is it interesting? what are the main obstacles? (2 Seiten)
 
+\section{Motivation}
+\input{1_intro/motivation}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Objectives \& Structure}
+\input{1_intro/objectives}
+
 \newpage
+
+
+\chapter{Background and Related Work}
+\label{chap:background}
+
+detailed description of the problem, discussion of prior work, introduction of relevant machine learning tools (2 Seiten)
+
+\chapter{Methodology}
+\label{chap:methodology}
+
+detailed description of your own approach, discussion of alternatives, introduction of the experimental methodology and quality metrics (7-8 Seiten)
+
+\chapter{Experiments}
+\label{chap:experiments}
+
+description of experiments, diagrams, comparison with results of prior work, interpretation of the experimental outcomes (7-8 Seiten)
+
+\chapter{Summary and Future Work}
+\label{chap:summary}
+1 Seite
+
+
+\chapter{Appendix}
+\label{chap:appendix}
+Beschreibung vom Code (2 Seiten)
+
+
+
+
+
+
+
+
+
 
 \bibliographystyle{apalike}
 % b) The File:
