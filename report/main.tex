@@ -145,7 +145,7 @@ by\\[0.5cm]
 \chapter*{Abstract}
 \input{0_abstract/abstract}
 
-\chapter*{Notation}
+{\let\clearpage\relax\chapter*{Notation}}
 \input{0_abstract/notation}
 
 \newpage
@@ -186,9 +186,10 @@ detailed description of the problem, discussion of prior work, introduction of r
 
 \chapter{Methodology}
 \label{chap:methodology}
-
 detailed description of your own approach, discussion of alternatives, introduction of the experimental methodology and quality metrics (7-8 Seiten)
 
+
+\input{3_methodology/methodology}
 \chapter{Experiments}
 \label{chap:experiments}
 

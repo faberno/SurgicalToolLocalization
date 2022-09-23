@@ -1,11 +1,1 @@
-\begin{itemize}
-	\item Bedeutung / Nutzen von Tool Lokalisierung
-	\item Beschreibung des Problems
-	\begin{itemize}
-		\item multi-label
-		\item multi-instance/same-instance
-		\item weakly annotated
-		\item imbalanced/fehlerhaftes dataset
-	\end{itemize}
-	\item Beschreibung und ziel des challenge
-\end{itemize}
+Surgical Tool Localization is a discipline with lots of useful applications. In traditional surgeries it could be used to evaluate the work of a surgeon and to find possible mistakes, while it could also be applied to the vast amount of already existing surgical videos, that then in return could be used to train even more complex systems like Surgical Workflow Analyzers. Intuitively, such a system would be trained fully supervised with lots of spatially annotated image or video data, which however is infeasible because of the sheer amount of images that would first have to be processed by humans and least be checked by additional professionals. Instead we will show that it only takes binary tool presence labels - which are very easy to generate, even for lots of data - to train a Fully Convolutional Neural Network to accurately localize surgical tools.
