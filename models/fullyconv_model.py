@@ -88,15 +88,18 @@ class FullyConvModel(BaseModel):
         name += f"_S{strides[0]}{strides[1]}"
         return name
 
-    def forward(self, input):
+    def forward(self, input, return_crm=False):
         """Run forward pass.
         """
+        output = dict()
         x = input.clone()
         for m in self.module_list:
             x = m(x)
         if not self.training:
             crm = x.clone() # class response maps
+            crm_original = x.clone()
         x = self.pooling(x)
+        output['class_scores'] = x
         if not self.training:
             if len(crm.shape) == 3:
                 crm = crm.unsqueeze(0)
@@ -105,11 +108,15 @@ class FullyConvModel(BaseModel):
             # crm -= torch.amin(crm, dim=(2, 3), keepdim=True)
             crm[crm < 0] = 0
             crm /= torch.amax(crm, dim=(2, 3), keepdim=True)
+            crm = torch.nan_to_num(crm)
             # crm = F.upsample(crm, size=self.configuration['img_size'], mode='bilinear',
             #                  align_corners=True)
             peaks = find_peaks(crm, upsample_size=self.configuration['img_size'])
-            return x, peaks
-        return x
+            output['peaks'] = peaks
+            if return_crm:
+                output['crm'] = crm
+                output['crm_original'] = crm_original
+        return output
 
     # def train_minibatch(self, input):
     #     input = transfer_to_device(input[0], self.device)

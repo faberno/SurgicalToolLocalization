@@ -47,8 +47,8 @@ class BaseModel(nn.Module):
         self.classes = configuration['classes']
 
     def train_minibatch(self, input):
-        data = transfer_to_device(input[0], self.device)
-        label = transfer_to_device(input[1], self.device)
+        data = transfer_to_device(input['img'], self.device)
+        label = transfer_to_device(input['target'], self.device)
 
         output = self(data)
         loss = self.criterion_loss(output, label, weight=self.train_weights, reduction='mean')
@@ -58,17 +58,29 @@ class BaseModel(nn.Module):
         self.optimizer.zero_grad()
 
     def test_minibatch(self, input, ap_tester=None):
-        data = transfer_to_device(input[0], self.device)
-        label = transfer_to_device(input[1], self.device)
+        data = transfer_to_device(input['img'], self.device)
+        label = transfer_to_device(input['target'], self.device)
+        if len(data.shape) == 4:
+            batch_size = len(data)
+        else:
+            batch_size = 1
         with torch.no_grad():
-            output = self(data)
+            output = self(data, return_crm=True)
+
+            if 'peaks' in output:
+                new_peaks = []
+                for k in range(batch_size):
+                    mask = output['peaks'][0][:, 0] == k
+                    coords = output['peaks'][0][mask, 1:].cpu()
+                    vals = output['peaks'][1][mask].cpu()
+                    new_peaks.append([coords, vals])
+                output['peaks'] = new_peaks
+
             if ap_tester is not None:
                 ap_tester.update(output)
-            if len(output) != 1:
-                loss = self.criterion_loss(output[0], label, reduction='sum')
-            else:
-                loss = self.criterion_loss(output, label, reduction='sum')
-        self.test_batch_losses.append(loss.item())
+            loss = self.criterion_loss(output['class_scores'], label, reduction='sum')
+            self.test_batch_losses.append(loss.item())
+        return output
 
     def set_input(self, input):
         """Unpack input data from the dataloader and perform necessary pre-processing steps.
@@ -96,15 +108,17 @@ class BaseModel(nn.Module):
             checkpoint_path = self.configuration['load_checkpoint']
             checkpoint = torch.load(checkpoint_path, map_location=self.device)
             self.load_state_dict(checkpoint['model_state_dict'])
-            self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-            self.scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
-            self.train_losses = checkpoint['train_losses']
-            self.test_losses = checkpoint['test_losses']
+            if 'scheduler_state_dict' in checkpoint:
+                self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+            if 'scheduler_state_dict' in checkpoint:
+                self.scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
+            self.train_losses = checkpoint.get('train_losses', [])
+            self.test_losses = checkpoint.get('test_losses', [])
             self.det_APs = checkpoint.get('det_AP_history', [])
             self.det_APs_cw = checkpoint.get('det_AP_cw_history', [])
             self.loc_APs = checkpoint.get('loc_AP_history', [])
             self.loc_APs_cw = checkpoint.get('loc_AP_cw_history', [])
-            return checkpoint['epoch']
+            return checkpoint.get('epoch', 0)
         return 0
 
         # if last_checkpoint > 0:
@@ -136,7 +150,8 @@ class BaseModel(nn.Module):
             'det_AP_history': self.det_APs,
             'det_AP_cw_history': self.det_APs_cw,
             'loc_AP_history': self.loc_APs,
-            'loc_AP_cw_history': self.loc_APs_cw
+            'loc_AP_cw_history': self.loc_APs_cw,
+            'configuration': self.configuration
         }, save_path)
 
         if best:

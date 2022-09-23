@@ -8,6 +8,7 @@ from utils.visualizer import Visualizer
 from utils.AP_tester import AP_tester
 import time
 from tqdm import tqdm
+from operator import itemgetter
 
 """Performs validation of a specified model.
     
@@ -46,8 +47,11 @@ def validate(config_file, export=False):
     model.test_batch_losses = []
 
     print("Validating...")
-    for i, data in tqdm(enumerate(val_dataset)):
-        model.test_minibatch(data, ap_tester)
+    for i, data in enumerate(tqdm(val_dataset)):
+        output = model.test_minibatch(data, ap_tester)
+        # visualizer.plot_validation_images(data['img'], output['crm'], data['target'], output['peaks'],
+        #                                   itemgetter(*data['idx'])(ap_tester.all_bboxes))
+        # print("")
 
     AP = ap_tester.run(compute_AP_loc=True)
 

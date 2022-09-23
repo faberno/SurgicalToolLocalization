@@ -4,6 +4,20 @@ from subprocess import Popen, PIPE
 import utils
 # import visdom
 import matplotlib.pyplot as plt
+import matplotlib.patches as patches
+import torch
+from torch.nn.functional import interpolate
+
+classes = [
+    "Grasper",
+    "Bipolar",
+    "Hook",
+    "Scissors",
+    "Clipper",
+    "Irrigator",
+    "SpecimenBag"
+]
+
 
 class Visualizer():
     """This class includes several functions that can display images and print logging information.
@@ -24,15 +38,6 @@ class Visualizer():
         """Reset the visualization.
         """
         pass
-
-
-    def create_visdom_connections(self):
-        """If the program could not connect to Visdom server, this function will start a new server at the default port.
-        """
-        cmd = sys.executable + ' -m visdom.server'
-        print('\n\nCould not connect to Visdom server. \n Trying to start a server....')
-        print('Command: %s' % cmd)
-        Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
 
 
     def plot_current_losses(self, epoch, counter_ratio, loss):
@@ -63,72 +68,6 @@ class Visualizer():
             self.create_visdom_connections()
 
 
-    def plot_current_validation_metrics(self, epoch, metrics):
-        """Display the current validation metrics on visdom display: dictionary of error labels and values.
-
-        Input params:
-            epoch: Current epoch.
-            losses: Validation metrics stored in the format of (name, float) pairs.
-        """
-        if not hasattr(self, 'val_plot_data'):
-            self.val_plot_data = {'X': [], 'Y': [], 'legend': list(metrics.keys())}
-        self.val_plot_data['X'].append(epoch)
-        self.val_plot_data['Y'].append([metrics[k] for k in self.val_plot_data['legend']])
-        x = np.squeeze(np.stack([np.array(self.val_plot_data['X'])] * len(self.val_plot_data['legend']), 1), axis=1)
-        y = np.squeeze(np.array(self.val_plot_data['Y']), axis=1)
-        try:
-            self.vis.line(
-                X=x,
-                Y=y,
-                opts={
-                    'title': self.name + ' over time',
-                    'legend': self.val_plot_data['legend'],
-                    'xlabel': 'epoch',
-                    'ylabel': 'metric'},
-                win=self.display_id+1)
-        except ConnectionError:
-            self.create_visdom_connections()
-
-
-    def plot_roc_curve(self, fpr, tpr, thresholds):
-        """Display the ROC curve.
-
-        Input params:
-            fpr: False positive rate (1 - specificity).
-            tpr: True positive rate (sensitivity).
-            thresholds: Thresholds for the curve.
-        """
-        try:
-            self.vis.line(
-                X=fpr,
-                Y=tpr,
-                opts={
-                    'title': 'ROC Curve',
-                    'xlabel': '1 - specificity',
-                    'ylabel': 'sensitivity',
-                    'fillarea': True},
-                win=self.display_id+2)
-        except ConnectionError:
-            self.create_visdom_connections()
-
-
-    def show_validation_images(self, images):
-        """Display validation images. The images have to be in the form of a tensor with
-        [(image, label, prediction), (image, label, prediction), ...] in the 0-th dimension.
-        """
-        # zip the images together so that always the image is followed by label is followed by prediction
-        images = images.permute(1,0,2,3)
-        images = images.reshape((images.shape[0]*images.shape[1],images.shape[2],images.shape[3]))
-
-        # add a channel dimension to the tensor since the excepted format by visdom is (B,C,H,W)
-        images = images[:,None,:,:]
-
-        try:
-            self.vis.images(images, win=self.display_id+3, nrow=3)
-        except ConnectionError:
-            self.create_visdom_connections()
-
-
     def print_current_train_loss(self, epoch, max_epochs, iter, max_iters, loss):
         """Print current losses on console.
 
@@ -141,7 +80,6 @@ class Visualizer():
         """
         message = f'[epoch: {epoch}/{max_epochs}, iter: {iter}/{max_iters}] Train Loss: {loss:.6f}'
         print(message)  # print the message
-
 
     def print_current_epoch_loss(self, epoch=None, max_epochs=None, model=None, plot=True, AP=None):
         """Print current losses on console.
@@ -198,3 +136,62 @@ class Visualizer():
         # plt.plot(average_precisions, label="val. AP")
         plt.legend()
         plt.show()
+
+
+    def plot_validation_images(self, originals, heatmaps, targets=None, peaks=None, bboxes=None,
+                               figsize=None, alpha=0.5, save=None):
+        shape = heatmaps.shape[:2]
+        max = torch.amax(originals, dim=(2, 3), keepdim=True)
+        min = torch.amin(originals, dim=(2, 3), keepdim=True)
+        originals = ((originals - min) / (max - min)).permute(0, 2, 3, 1)
+
+        if originals.shape[1] != heatmaps.shape[2] or originals.shape[2] != heatmaps.shape[3]:
+            heatmaps = interpolate(heatmaps, originals.shape[1:3], mode='bilinear')
+
+        # max = torch.amax(heatmaps, dim=(1, 2, 3), keepdim=True)
+        # min = torch.amin(heatmaps, dim=(1, 2, 3), keepdim=True)
+        # heatmaps = ((heatmaps - min) / (max - min))
+
+        if figsize is None:
+            figsize = ((shape[1] + 1) * 2, shape[0] + 1)
+        fig, ax = plt.subplots(shape[0], shape[1] + 1, figsize=figsize)
+        for i in range(shape[0]):
+            ax[i, 0].imshow(originals[i])
+            ax[i, 0].tick_params(left=False,
+                                 bottom=False,
+                                 labelleft=False,
+                                 labelbottom=False)
+            if i == 0:
+                ax[i, 0].set_title('Image')
+            for j in range(1, shape[1] + 1):
+                if targets[i, j - 1].item() == 1:
+                    for axis in ['top', 'bottom', 'left', 'right']:
+                        ax[i, j].spines[axis].set_color('red')
+                        ax[i, j].spines[axis].set_linewidth(3)
+                ax[i, j].imshow(originals[i], cmap='gray')
+                ax[i, j].imshow(heatmaps[i, j - 1], alpha=alpha, vmin=0, vmax=1)
+                ax[i, j].tick_params(left=False,
+                                     bottom=False,
+                                     labelleft=False,
+                                     labelbottom=False)
+                if i == 0:
+                    ax[i, j].set_title(classes[j - 1])
+
+        if peaks is not None:
+            for i_peak, peak in enumerate(peaks):
+                for p in peak[0]:
+                    ax[i_peak, p[0] + 1].scatter(p[2], p[1], c='r')
+
+        if bboxes is not None:
+            for i_box, box in enumerate(bboxes):
+                for b in box:
+                    b = b.int()
+                    rect = patches.Rectangle((b[1], b[2]), b[3] - b[1], b[4] - b[2],
+                                             linewidth=1, edgecolor='b', facecolor='none')
+                    ax[i_box, b[0] + 1].add_patch(rect)
+
+        plt.tight_layout()
+        if save is None:
+            plt.show()
+        else:
+            plt.savefig(save)

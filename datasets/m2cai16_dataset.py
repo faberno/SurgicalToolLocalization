@@ -68,7 +68,12 @@ class m2cai16Dataset(BaseDataset):
 
         # if self.set in ('val', 'test'):
         #     return img, target, file['objects']
-        return img, target
+        out = {
+            'idx': torch.tensor(idx),
+            'img': img,
+            'target': target
+        }
+        return out
 
     def __len__(self):
         # return the size of the dataset
@@ -127,14 +132,15 @@ class m2cai16Dataset(BaseDataset):
             raise ValueError(f'Set file {filename} does not exist')
         return dataset_elements
 
-    def collate_fn(self, data):
-        if len(data[0]) == 3:
-            imgs, targets, bbox = zip(*data)
-            imgs = torch.stack(imgs)
-            targets = torch.stack(targets)
-            return imgs, targets, bbox
-        else:
-            imgs, targets = zip(*data)
-            imgs = torch.stack(imgs)
-            targets = torch.stack(targets)
-            return imgs, targets.long()
+    # def collate_fn(self, data):
+    #     # if len(data[0]) == 3:
+    #     #     imgs, targets, bbox = zip(*data)
+    #     #     imgs = torch.stack(imgs)
+    #     #     targets = torch.stack(targets)
+    #     #     return imgs, targets, bbox
+    #     # else:
+    #     idx, imgs, targets = zip(*data)
+    #     idx = torch.stack(idx)
+    #     imgs = torch.stack(imgs)
+    #     targets = torch.stack(targets)
+    #     return idx, imgs, targets.long()

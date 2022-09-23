@@ -1,7 +1,7 @@
 import torch
 from torchmetrics.functional import average_precision
 import numpy as np
-
+import math
 def precision_recall(out, tar, classwise=False):
     if not classwise:
         if len(tar.shape) == 2:
@@ -92,18 +92,14 @@ class AP_tester:
         self.i = 0
 
     def update(self, new_outputs):
-        if len(new_outputs)==1:
-            self.all_outputs[self.i: (self.i + len(new_outputs))] = new_outputs
-            self.i += len(new_outputs)
+        if len(new_outputs['class_scores'].shape) == 2:
+            batch_size = len(new_outputs['class_scores'])
         else:
-            detection_out, localization_out = new_outputs
-            self.all_outputs[self.i: (self.i + len(detection_out))] = detection_out
-            self.i += len(detection_out)
-            for k in range(len(detection_out)):
-                mask = localization_out[0][:, 0] == k
-                coords = localization_out[0][mask, 1:].cpu()
-                vals = localization_out[1][mask].cpu()
-                self.all_peaks.append([coords, vals])
+            batch_size = 1
+        self.all_outputs[self.i: (self.i + batch_size)] = new_outputs['class_scores']
+        if 'peaks' in new_outputs:
+            self.all_peaks.extend(new_outputs['peaks'])
+        self.i += batch_size
 
     def run(self, compute_AP_loc=False, F1=False):
         if F1:
@@ -111,11 +107,14 @@ class AP_tester:
         else:
             AP_det = self.detection_AP()
         if self.inference and compute_AP_loc:
+            dist_error = self.distance_error()
             AP_loc = self.localization_AP()
+
         else:
             AP_loc = dict()
+            dist_error = dict()
         self.reset()
-        return {**AP_det, **AP_loc}
+        return {**AP_det, **AP_loc, **dist_error}
 
     def reset(self):
         self.all_outputs = torch.zeros((self.dataset_len, self.n_classes), device=self.device)
@@ -216,3 +215,36 @@ class AP_tester:
         output['loc_AP_cw'] = area_under_curve(output['loc_PR_curve_cw'])
 
         return output
+
+    def distance_error(self):
+        peak_list = self.all_peaks
+        bbox_list = self.all_bboxes
+        # assert len(peak_list) == len(bboxes)
+        all_distances = []
+        all_true_labels = []
+        for peaks, bboxes in zip(peak_list, bbox_list):
+            bbox_centers = (bboxes[:, 1:3] + bboxes[:, 3:5]) / 2
+            mask = peaks[1] > 0.5
+            true_peaks = peaks[0][mask]
+            true_peaks[:, 1:] = true_peaks[:, 1:].fliplr()
+
+            distances = torch.sum((true_peaks[:, None, 1:] - bbox_centers)**2, dim=2).sqrt()
+            right_label = true_peaks[:, [0]] == bboxes[:, 0]
+            right_label_mask = torch.any(right_label, dim=1)
+            min_distances = torch.min(distances[right_label_mask], dim=1).values
+            labels = true_peaks[:, 0][right_label_mask]
+            all_distances.append(min_distances)
+            all_true_labels.append(labels)
+
+        all_distances = torch.hstack(all_distances)
+        all_true_labels = torch.hstack(all_true_labels)
+        class_distances = torch.zeros(self.n_classes)
+        diagonal = torch.sqrt(self.image_size[0]**2 + self.image_size[1]**2)
+        for i in range(self.n_classes):
+            class_distances[i] = torch.mean(all_distances[all_true_labels == i])
+        class_distances = class_distances / diagonal * 100
+        out = {
+            'distance_cw': class_distances,
+            'distance': torch.mean(all_distances) / diagonal * 100
+        }
+        return out
