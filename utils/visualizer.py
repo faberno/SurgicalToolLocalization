@@ -179,7 +179,7 @@ class Visualizer():
 
         if peaks is not None:
             for i_peak, peak in enumerate(peaks):
-                for p in peak[0]:
+                for p in peak:
                     ax[i_peak, p[0] + 1].scatter(p[2], p[1], c='r')
 
         if bboxes is not None:

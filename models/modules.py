@@ -6,15 +6,90 @@ from models.backbones.resnet import ResNet,_resnet, BasicBlock, Bottleneck
 from models.backbones.vgg import _vggnet
 from models.backbones.alexnet import _alexnet
 
-def minmax_pooling(input):
-    maxpool = F.max_pool2d(input, input.shape[2:]).squeeze()
-    minpool = F.max_pool2d(-input, input.shape[2:]).squeeze()
-    return maxpool - 0.6 * minpool
+import torch
+from torch.nn.functional import interpolate
+from utils.peak_stimulation import peak_stimulation
 
-def max_pooling(input):
-    maxpool = F.max_pool2d(input, input.shape[2:]).squeeze()
+def _median_filter(input):
+    batch_size, num_channels, h, w = input.size()
+    threshold, _ = torch.median(input.view(batch_size, num_channels, h * w), dim=2)
+    return threshold.contiguous().view(batch_size, num_channels, 1, 1)
+
+def _mean_filter(input):
+    batch_size, num_channels, h, w = input.size()
+    threshold = torch.mean(input.view(batch_size, num_channels, h * w), dim=2)
+    return threshold.contiguous().view(batch_size, num_channels, 1, 1)
+
+def _max_filter(input):
+    batch_size, num_channels, h, w = input.size()
+    threshold, _ = torch.max(input.view(batch_size, num_channels, h * w), dim=2)
+    return threshold.contiguous().view(batch_size, num_channels, 1, 1)
+
+def find_peaks(crm, upsample_size=None, aggregation=False, win_size=3, peak_filter=_median_filter):
+    out = dict()
+    if aggregation:
+        peak_list, aggregation = peak_stimulation(crm, return_aggregation=aggregation, win_size=win_size, peak_filter=peak_filter)
+        out['class_scores'] = aggregation
+    else:
+        peak_list = peak_stimulation(crm, return_aggregation=aggregation, win_size=win_size, peak_filter=peak_filter)
+    peak_values = crm[peak_list[:, 0], peak_list[:, 1], peak_list[:, 2], peak_list[:, 3]]
+    if upsample_size is not None:
+        upsample = torch.tensor([upsample_size[0] / crm.shape[2], upsample_size[1] / crm.shape[3]], device=peak_list.device)
+        peak_list_upsample = peak_list.float()
+        peak_list_upsample[:, 2:] += 0.5
+        peak_list_upsample[:, 2:] *= upsample[None, :]
+        peak_list = peak_list_upsample.round().int()
+
+    out['peak_list'] = peak_list
+    out['peak_values'] = peak_values
+    return out
+
+
+
+def minmaxpooling(crm, upsample_size, inference=True):
+    maxpool = F.max_pool2d(crm, crm.shape[2:]).squeeze()
+    minpool = F.max_pool2d(-crm, crm.shape[2:]).squeeze()
+    if inference and crm.shape[-2:] != torch.Size(upsample_size):
+        crm = interpolate(crm, upsample_size, mode='bilinear', align_corners=True)
+    output = {'class_scores': maxpool - 0.6 * minpool,
+              'crm': crm}
+    return pooling_postprocess(output, inference)
+
+def maxpooling(crm):
+    maxpool = F.max_pool2d(crm, crm.shape[2:]).squeeze()
     return maxpool
 
+def peakresponsepooling(crm, upsample_size, inference=True):
+    """
+    Peak Response from the paper "Weakly Supervised Instance Segmentation using Class Peak Response".
+    Arguments:
+        crm: numpy.array - Class Response Maps
+        upsample_size: list/tuple - size of the original image
+        upsample: bool - if true the crm is upsampled before peak finding, otherwise original peak
+                        positions are just naively calculated
+        inference: bool - Are we looking for peaks. Not important for this function, but for other
+                        poolings
+    """
+    if crm.shape[-2:] != torch.Size(upsample_size):
+        crm = interpolate(crm, upsample_size, mode='bilinear', align_corners=True)
+    out = find_peaks(crm, aggregation=True)
+    out['crm'] = crm
+    return pooling_postprocess(out, inference)
+
+def pooling_postprocess(inputs, inference):
+    """
+    If peaks are not found yet, do it here.
+    """
+    if not inference:
+        return inputs
+    class_found = torch.sigmoid(inputs['class_scores']) > 0.5
+    inputs['crm'][~class_found] = 0
+    inputs['crm'][inputs['crm'] < 0] = 0
+    inputs['crm'] /= torch.amax(inputs['crm'], dim=(2, 3), keepdim=True)
+    inputs['crm'] = torch.nan_to_num(inputs['crm'])
+    peaks = find_peaks(inputs['crm'], aggregation=False)
+    inputs.update(peaks)
+    return inputs
 
 def locmap(num_features, num_classes):
     classifier = nn.Sequential(

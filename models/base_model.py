@@ -67,17 +67,20 @@ class BaseModel(nn.Module):
         with torch.no_grad():
             output = self(data, return_crm=True)
 
-            if 'peaks' in output:
+            if 'peak_list' in output:
                 new_peaks = []
+                new_vals = []
                 for k in range(batch_size):
-                    mask = output['peaks'][0][:, 0] == k
-                    coords = output['peaks'][0][mask, 1:].cpu()
-                    vals = output['peaks'][1][mask].cpu()
-                    new_peaks.append([coords, vals])
-                output['peaks'] = new_peaks
+                    mask = output['peak_list'][:, 0] == k
+                    coords = output['peak_list'][mask, 1:].cpu()
+                    vals = output['peak_values'][mask].cpu()
+                    new_peaks.append(coords)
+                    new_vals.append(vals)
+                output['peak_list'] = new_peaks
+                output['peak_values'] = new_vals
 
             if ap_tester is not None:
-                ap_tester.update(output)
+                ap_tester.update(output, input['idx'])
             loss = self.criterion_loss(output['class_scores'], label, reduction='sum')
             self.test_batch_losses.append(loss.item())
         return output

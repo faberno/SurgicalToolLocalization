@@ -66,8 +66,6 @@ def train(config_file, export=False):
         model.train_batch_losses = []
 
         for i, data in enumerate(train_dataset):  # inner loop within one epoch
-            visualizer.reset()
-
             model.train_minibatch(data)
 
             if i % configuration['printout_freq'] == 0:

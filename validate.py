@@ -18,7 +18,7 @@ Input params:
         the system-specific, dataset-specific and 
         model-specific settings.
 """
-def validate(config_file, export=False):
+def validate(config_file):
     print('Reading config file...')
     configuration = parse_configuration(config_file)
 
@@ -39,7 +39,7 @@ def validate(config_file, export=False):
     visualizer = Visualizer(configuration['visualization_params'])   # create a visualizer that displays images and plots
 
     print('Initializing AP_Tester...')
-    ap_tester = AP_tester(val_dataset.dataset, model.device, val_dataset.dataset.resize)
+    ap_tester = AP_tester(val_dataset.dataset, model.device, val_dataset.dataset.resize, model.configuration['backbone']['options']['strides'])
 
     start_time = time.time()  # timer for entire epoch
 
@@ -49,9 +49,8 @@ def validate(config_file, export=False):
     print("Validating...")
     for i, data in enumerate(tqdm(val_dataset)):
         output = model.test_minibatch(data, ap_tester)
-        # visualizer.plot_validation_images(data['img'], output['crm'], data['target'], output['peaks'],
+        # visualizer.plot_validation_images(data['img'], output['crm'], data['target'], output['peak_list'],
         #                                   itemgetter(*data['idx'])(ap_tester.all_bboxes))
-        # print("")
 
     AP = ap_tester.run(compute_AP_loc=True)
 

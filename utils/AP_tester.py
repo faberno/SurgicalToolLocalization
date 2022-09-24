@@ -1,7 +1,9 @@
 import torch
 from torchmetrics.functional import average_precision
 import numpy as np
-import math
+from operator import itemgetter
+from math import sqrt
+
 def precision_recall(out, tar, classwise=False):
     if not classwise:
         if len(tar.shape) == 2:
@@ -69,15 +71,18 @@ def area_under_curve(x):
 
 
 class AP_tester:
-    def __init__(self, dataset, device, image_size):
+    def __init__(self, dataset, device, image_size, model_strides):
         self.device = device
         self.dataset_len = len(dataset)
         self.image_size = image_size
         self.n_classes = dataset.n_classes
         self.all_bboxes = []
         self.all_peaks = []
+        self.all_peak_values = []
+        self.all_indices = []
         self.all_outputs = torch.zeros((self.dataset_len, self.n_classes), device=device)
         self.inference = dataset.inference
+        self.model_strides = model_strides
 
         if self.inference:
             targets, bboxes = dataset.get_targets()
@@ -91,17 +96,22 @@ class AP_tester:
         # index to fill up the outputs
         self.i = 0
 
-    def update(self, new_outputs):
+    def update(self, new_outputs, indices):
+        self.all_indices.append(indices)
         if len(new_outputs['class_scores'].shape) == 2:
             batch_size = len(new_outputs['class_scores'])
         else:
             batch_size = 1
         self.all_outputs[self.i: (self.i + batch_size)] = new_outputs['class_scores']
-        if 'peaks' in new_outputs:
-            self.all_peaks.extend(new_outputs['peaks'])
+        if 'peak_list' in new_outputs:
+            self.all_peaks.extend(new_outputs['peak_list'])
+            self.all_peak_values.extend(new_outputs['peak_values'])
         self.i += batch_size
 
     def run(self, compute_AP_loc=False, F1=False):
+        self.all_indices = torch.hstack(self.all_indices)
+        self.all_bboxes = itemgetter(*self.all_indices)(self.all_bboxes)
+        self.all_targets = self.all_targets[self.all_indices]
         if F1:
             AP_det = compute_F1(torch.sigmoid(self.all_outputs), self.all_targets)
         else:
@@ -119,6 +129,8 @@ class AP_tester:
     def reset(self):
         self.all_outputs = torch.zeros((self.dataset_len, self.n_classes), device=self.device)
         self.all_peaks = []
+        self.all_peak_values = []
+        self.all_indices = []
         self.i = 0
 
     def detection_AP(self):
@@ -154,8 +166,10 @@ class AP_tester:
 
         return output
 
-    def localization_AP(self, tolerance=16):
+    def localization_AP(self, tolerance=8):
+        tolerance = tolerance * self.model_strides[0] * self.model_strides[1]
         peaks = self.all_peaks
+        peak_values = self.all_peak_values
         bboxes = self.all_bboxes
         steps = 100
         TP_cw, FP_cw, FN_cw = np.zeros((self.n_classes, steps)), np.zeros(
@@ -172,14 +186,14 @@ class AP_tester:
 
             # boxes = torch.vstack((boxes, torch.tensor([[270., 180. ,320., 220.],[50., 50. ,80., 80.]])))
             for t_id, t in enumerate(torch.linspace(0, 1, steps)):
-                mask = peaks[i][1] > t
+                mask = peak_values[i] > t
                 if len(mask) == 0:
                     for l in box_labels:
                         FN_cw[l, t_id] += 1
                         FN[t_id] += 1
                     continue
-                pred_pos = peaks[i][0][:, 1:].fliplr()[mask]
-                pred_labels = peaks[i][0][:, 0][mask]
+                pred_pos = peaks[i][:, 1:].fliplr()[mask]
+                pred_labels = peaks[i][:, 0][mask]
 
                 # box_centers = torch.hstack(((boxes[:, [0]] + boxes[:, [2]]) / 2, (boxes[:, [1]] + boxes[:, [3]]) / 2))
                 a = boxes[:, None, :2] < pred_pos
@@ -218,14 +232,14 @@ class AP_tester:
 
     def distance_error(self):
         peak_list = self.all_peaks
+        peak_values = self.all_peak_values
         bbox_list = self.all_bboxes
         # assert len(peak_list) == len(bboxes)
         all_distances = []
         all_true_labels = []
-        for peaks, bboxes in zip(peak_list, bbox_list):
+        for peaks, peak_values, bboxes in zip(peak_list, peak_values, bbox_list):
             bbox_centers = (bboxes[:, 1:3] + bboxes[:, 3:5]) / 2
-            mask = peaks[1] > 0.5
-            true_peaks = peaks[0][mask]
+            true_peaks = peaks[peak_values > 0.5]
             true_peaks[:, 1:] = true_peaks[:, 1:].fliplr()
 
             distances = torch.sum((true_peaks[:, None, 1:] - bbox_centers)**2, dim=2).sqrt()
@@ -239,7 +253,7 @@ class AP_tester:
         all_distances = torch.hstack(all_distances)
         all_true_labels = torch.hstack(all_true_labels)
         class_distances = torch.zeros(self.n_classes)
-        diagonal = torch.sqrt(self.image_size[0]**2 + self.image_size[1]**2)
+        diagonal = sqrt(self.image_size[0]**2 + self.image_size[1]**2)
         for i in range(self.n_classes):
             class_distances[i] = torch.mean(all_distances[all_true_labels == i])
         class_distances = class_distances / diagonal * 100
