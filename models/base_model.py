@@ -51,7 +51,7 @@ class BaseModel(nn.Module):
         label = transfer_to_device(inputs['target'], self.device)
 
         output = self(data)
-        loss = self.criterion_loss(output, label, weight=self.train_weights, reduction='mean')
+        loss = self.criterion_loss(output['class_scores'], label, weight=self.train_weights, reduction='mean')
         loss.backward()  # calculate gradients
         self.train_batch_losses.append(loss.item())
         self.optimizer.step()
@@ -65,7 +65,7 @@ class BaseModel(nn.Module):
         else:
             batch_size = 1
         with torch.no_grad():
-            output = self(data, return_crm=True)
+            output = self(data)
 
             if 'peak_list' in output:
                 new_peaks = []

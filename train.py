@@ -51,13 +51,12 @@ def train(config_file, export=False):
     visualizer = Visualizer(configuration['visualization_params'])   # create a visualizer that displays images and plots
 
     print('Initializing AP_Tester...')
-    ap_tester = AP_tester(val_dataset.dataset, model.device, val_dataset.dataset.resize)
+    ap_tester = AP_tester(val_dataset.dataset, model.device, val_dataset.dataset.resize,
+                          model.configuration['backbone']['options']['strides'])
 
     num_epochs = configuration['model_params']['max_epochs']
     for epoch in range(starting_epoch + 1, num_epochs + 1):
         epoch_start_time = time.time()  # timer for entire epoch
-        train_dataset.dataset.pre_epoch_callback(epoch)
-        model.pre_epoch_callback(epoch)
 
         train_iterations = len(train_dataset)
         train_batch_size = configuration['train_dataset_params']['loader_params']['batch_size']
@@ -79,7 +78,7 @@ def train(config_file, export=False):
         for i, data in tqdm(enumerate(val_dataset)):
             model.test_minibatch(data, ap_tester)
         AP_loc = False
-        if epoch % configuration['AP_loc_freq'] == 0:
+        if (epoch % configuration['AP_loc_freq'] == 0) or (epoch == num_epochs):
             AP_loc = True
         AP = ap_tester.run(compute_AP_loc=AP_loc)
 
@@ -103,6 +102,9 @@ def train(config_file, export=False):
         model.scheduler.step()
 
 if __name__ == '__main__':
+    import multiprocessing
+
+    multiprocessing.set_start_method('spawn', True)
 
     parser = argparse.ArgumentParser(description='Perform model training.')
     parser.add_argument('configfile', help='path to the configfile')

@@ -29,7 +29,7 @@ def _max_filter(input):
     return threshold.contiguous().view(batch_size, num_channels, 1, 1)
 
 
-def find_peaks(crm, upsample_size=None, aggregation=False, win_size=10,
+def find_peaks(crm, upsample_size=None, aggregation=False, win_size=11,
                peak_filter=_median_filter):
     """
     Find the peaks in the class response maps.

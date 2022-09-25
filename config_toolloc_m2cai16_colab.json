@@ -46,7 +46,7 @@
         },
         "structure": {
             "modules": ["locmap"],
-            "pooling": "minmax_pooling",
+            "pooling": "minmaxpooling",
             "multimaps": false
         },
         "max_epochs": 100,

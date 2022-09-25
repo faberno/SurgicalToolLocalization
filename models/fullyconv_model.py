@@ -31,7 +31,7 @@ class FullyConvModel(BaseModel):
 
         self.pooling = find_module_using_name(structure['pooling'])
 
-        self.criterion_loss = F.binary_cross_entropy_with_logits
+        self.criterion_loss = F.multilabel_soft_margin_loss
         optim_config = config['optimizer']
         optim_input = [{'params': self.module_list[i].parameters(), 'lr': optim_config['lr'][i]}
                        for i in range(len(self.module_list))]
