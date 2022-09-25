@@ -41,12 +41,18 @@ class BaseDataset(data.Dataset, ABC):
         pass
 
 def channelswitcher(x):
+    """
+    Shuffles the color channels of an image.
+    """
     if len(x.shape) == 4:
         return x[:, torch.randperm(3)]
     else:
         return x[torch.randperm(3)]
 
 def get_transform(opt):
+    """
+    Builds the transform list from the configuration.
+    """
     transform_list = []
     if 'transforms' in opt:
         print(opt)

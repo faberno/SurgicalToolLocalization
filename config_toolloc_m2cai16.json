@@ -4,7 +4,7 @@
         "dataset_path": "/media/fabian/DATA/m2cai16-tool-locations/m2cai2016",
         "set": "trainval",
         "loader_params": {
-            "batch_size": 2,
+            "batch_size": 5,
             "shuffle": true,
             "num_workers": 2,
             "pin_memory": true
@@ -25,7 +25,7 @@
         "set": "test",
         "loader_params": {
             "batch_size": 5,
-            "shuffle": false,
+            "shuffle": true,
             "num_workers": 2,
             "pin_memory": true
         },
@@ -46,8 +46,7 @@
         },
         "structure": {
             "modules": ["locmap"],
-            "pooling": "minmax_pooling",
-            "multimaps": false
+            "pooling": "minmaxpooling"
         },
         "max_epochs": 150,
         "optimizer": {
@@ -59,7 +58,7 @@
         },
         "export_path": "",
         "checkpoint_path": "/home/fabian/projects/python/SurgicalToolLocalization/checkpoints",
-        "load_checkpoint": ""
+        "load_checkpoint": "/home/fabian/projects/python/SurgicalToolLocalization/checkpoints/GP/gpparams_resnet18-locmap-minmax_pooling_S22.pth"
     },
     "visualization_params": {
         "name": "2d segmentation"

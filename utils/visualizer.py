@@ -33,12 +33,10 @@ class Visualizer():
         self.display_id = 0
         self.name = configuration['name']
 
-
     def reset(self):
         """Reset the visualization.
         """
         pass
-
 
     def plot_current_losses(self, epoch, counter_ratio, loss):
         """Display the current losses on visdom display: dictionary of error labels and values.
@@ -52,7 +50,9 @@ class Visualizer():
             self.loss_plot_data = {'X': [], 'Y': [], 'legend': ['Loss']}
         self.loss_plot_data['X'].append(epoch + counter_ratio)
         self.loss_plot_data['Y'].append([loss.item()])
-        x = np.squeeze(np.stack([np.array(self.loss_plot_data['X'])] * len(self.loss_plot_data['legend']), 1), axis=1)
+        x = np.squeeze(
+            np.stack([np.array(self.loss_plot_data['X'])] * len(self.loss_plot_data['legend']), 1),
+            axis=1)
         y = np.squeeze(np.array(self.loss_plot_data['Y']), axis=1)
         try:
             self.vis.line(
@@ -67,7 +67,6 @@ class Visualizer():
         except ConnectionError:
             self.create_visdom_connections()
 
-
     def print_current_train_loss(self, epoch, max_epochs, iter, max_iters, loss):
         """Print current losses on console.
 
@@ -81,7 +80,8 @@ class Visualizer():
         message = f'[epoch: {epoch}/{max_epochs}, iter: {iter}/{max_iters}] Train Loss: {loss:.6f}'
         print(message)  # print the message
 
-    def print_current_epoch_loss(self, epoch=None, max_epochs=None, model=None, plot=True, AP=None):
+    def print_current_epoch_loss(self, epoch=None, max_epochs=None, model=None, plot=True,
+                                 AP=None):
         """Print current losses on console.
 
         Input params:
@@ -111,7 +111,8 @@ class Visualizer():
 
             if 'loc_PR_curve' in AP:
                 classlist = list(model.classes.keys())
-                plt.plot(AP['det_PR_curve'][1], AP['det_PR_curve'][0], label="all", linewidth=3, linestyle='dashed')
+                plt.plot(AP['det_PR_curve'][1], AP['det_PR_curve'][0], label="all", linewidth=3,
+                         linestyle='dashed')
                 for i, curve in enumerate(AP['det_PR_curve_cw']):
                     plt.plot(curve[1], curve[0], label=classlist[i])
                 plt.title('Detection Precision-Recall')
@@ -121,7 +122,8 @@ class Visualizer():
                 plt.show()
 
             if 'loc_PR_curve' in AP:
-                plt.plot(AP['loc_PR_curve'][1], AP['loc_PR_curve'][0], label="all", linewidth=3, linestyle='dashed')
+                plt.plot(AP['loc_PR_curve'][1], AP['loc_PR_curve'][0], label="all", linewidth=3,
+                         linestyle='dashed')
                 for i, curve in enumerate(AP['loc_PR_curve_cw']):
                     plt.plot(curve[1], curve[0], label=classlist[i])
                 plt.title('Localization Precision-Recall')
@@ -130,16 +132,21 @@ class Visualizer():
                 plt.legend()
                 plt.show()
 
-    def plot_loss_curves(self, model):
-        plt.plot(model.train_losses, label="train")
-        plt.plot(model.test_losses, label="validation")
-        # plt.plot(average_precisions, label="val. AP")
-        plt.legend()
-        plt.show()
-
-
     def plot_validation_images(self, originals, heatmaps, targets=None, peaks=None, bboxes=None,
                                figsize=None, alpha=0.5, save=None):
+        """
+        Plots all the image overlayed with the class heatmaps, the true targets, bounding boxes
+        and found peaks.
+        Arguments:
+            originals: torch.tensor - Untransformed images
+            heatmaps: torch.tensor - Class Response Maps
+            targets: torch.tensor - True classes (one hot)
+            peaks: list - List of found peaks per instance in batch
+            bboxes: list - List of true bounding boxes per instance in batch
+            figsize: tuple - Size of the plot figure
+            alpha: float (0-1) - Alpha value of the heatmaps in the images
+            save: string - Path to save the figure to
+        """
         shape = heatmaps.shape[:2]
         max = torch.amax(originals, dim=(2, 3), keepdim=True)
         min = torch.amin(originals, dim=(2, 3), keepdim=True)
@@ -147,10 +154,6 @@ class Visualizer():
 
         if originals.shape[1] != heatmaps.shape[2] or originals.shape[2] != heatmaps.shape[3]:
             heatmaps = interpolate(heatmaps, originals.shape[1:3], mode='bilinear')
-
-        # max = torch.amax(heatmaps, dim=(1, 2, 3), keepdim=True)
-        # min = torch.amin(heatmaps, dim=(1, 2, 3), keepdim=True)
-        # heatmaps = ((heatmaps - min) / (max - min))
 
         if figsize is None:
             figsize = ((shape[1] + 1) * 2, shape[0] + 1)

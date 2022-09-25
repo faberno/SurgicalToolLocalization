@@ -2,8 +2,6 @@ import argparse
 from datasets import create_dataset
 from utils import parse_configuration
 from models import create_model
-import os
-import torch
 from utils.visualizer import Visualizer
 from utils.AP_tester import AP_tester
 import time
@@ -47,15 +45,14 @@ def validate(config_file):
     model.test_batch_losses = []
 
     print("Validating...")
-    for i, data in enumerate(tqdm(val_dataset)):
+    for i, data in enumerate(tqdm(val_dataset, total=len(val_dataset.dataloader))):
         output = model.test_minibatch(data, ap_tester)
-        # visualizer.plot_validation_images(data['img'], output['crm'], data['target'], output['peak_list'],
-        #                                   itemgetter(*data['idx'])(ap_tester.all_bboxes))
+        visualizer.plot_validation_images(data['img'], output['crm'], data['target'], output['peak_list'],
+                                          itemgetter(*data['idx'])(ap_tester.all_bboxes))
 
     AP = ap_tester.run(compute_AP_loc=True)
 
     visualizer.print_current_epoch_loss(model=model, plot=True, AP=AP)
-
 
     print(f'Time Taken: {time.time() - start_time}')
 

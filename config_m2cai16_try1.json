@@ -49,10 +49,10 @@
             "pooling": "minmax_pooling",
             "multimaps": false
         },
-        "max_epochs": 100,
+        "max_epochs": 50,
         "optimizer": {
             "lr": [0.01, 0.01],
-            "lr_milestones": [50, 80],
+            "lr_milestones": [25, 40],
             "gamma": 0.45,
             "momentum": 0.9,
             "weight_decay": 1e-3

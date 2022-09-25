@@ -11,7 +11,8 @@ import torch.optim as optim
 
 class FullyConvModel(BaseModel):
     def __init__(self, config):
-        """Initialize the model.
+        """
+        Initialize the model.
         """
         super().__init__(config)
         self.module_list = nn.ModuleList()
@@ -30,7 +31,7 @@ class FullyConvModel(BaseModel):
 
         self.pooling = find_module_using_name(structure['pooling'])
 
-        self.criterion_loss = F.multilabel_soft_margin_loss
+        self.criterion_loss = F.binary_cross_entropy_with_logits
         optim_config = config['optimizer']
         optim_input = [{'params': self.module_list[i].parameters(), 'lr': optim_config['lr'][i]}
                        for i in range(len(self.module_list))]
@@ -43,6 +44,9 @@ class FullyConvModel(BaseModel):
                                                         gamma=optim_config['gamma'])
 
     def create_name(self, config):
+        """
+        Create a name to save the model under.
+        """
         name = ""
         name += (config['backbone']['name'])
         for m in config['structure']['modules']:
@@ -52,7 +56,7 @@ class FullyConvModel(BaseModel):
         name += f"_S{strides[0]}{strides[1]}"
         return name
 
-    def forward(self, input, return_crm=False):
+    def forward(self, input):
         """Run forward pass.
         """
         x = input.clone()
@@ -62,7 +66,6 @@ class FullyConvModel(BaseModel):
             x = x.unsqueeze(0)
         out = self.pooling(x, inference=(not self.training),
                            upsample_size=self.configuration['img_size'])
-
         return out
 
 
@@ -96,18 +99,3 @@ class FullyConvModel(BaseModel):
     #             output['crm'] = crm
     #             output['crm_original'] = crm_original
     #     return output
-
-    # def train_minibatch(self, input):
-    #     input = transfer_to_device(input[0], self.device)
-    #     label = transfer_to_device(input[1], self.device)
-    #
-    #     output = self.forward(input)
-    #     loss = self.criterion_loss(output, label, weight=self.train_weights, reduction='mean')
-    #     loss.backward()  # calculate gradients
-    #     self.optimizer.step()
-    #     self.optimizer.zero_grad()
-
-    def optimize_parameters(self):
-        """Calculate gradients and update network weights.
-        """
-        pass

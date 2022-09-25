@@ -8,7 +8,7 @@ import re
 
 
 class surgtoollocDataset(BaseDataset):
-    """Represents the a subdataset of the surgtoolloc challange.
+    """Represents a subdataset of the surgtoolloc challange.
 
     Input params:
         configuration: Configuration dictionary.

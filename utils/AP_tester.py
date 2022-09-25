@@ -5,6 +5,14 @@ from operator import itemgetter
 from math import sqrt
 
 def precision_recall(out, tar, classwise=False):
+    """
+    Calculates precision and recall from the model outputs (detection probabilities) and the
+    targets.
+    Arguments:
+        out: torch.tensor - model outputs
+        tar: torch.tensor - class targets
+        classwise: bool - Calculate for every class individually
+    """
     if not classwise:
         if len(tar.shape) == 2:
             tar = tar[:, :, None]
@@ -37,6 +45,12 @@ def precision_recall(out, tar, classwise=False):
         return precision, recall, precision_cw, recall_cw
 
 def compute_F1(preds, targets):
+    """
+    Computes the F1 Score of the model outputs.
+    Arguments:
+        preds: torch.tensor - model outputs
+        targets: torch.tensor - class targets
+    """
     preds = preds.cpu()
     output = dict()
     targets = targets.int()
@@ -56,6 +70,9 @@ def compute_F1(preds, targets):
 
 
 def area_under_curve(x):
+    """
+    Calculates the area under a precision-recall curve
+    """
     if len(x.shape) == 2:  # classwise or not
         if x[1, 0] > x[1, -1]:  # flip if recall is descending
             x = np.fliplr(x)
@@ -71,7 +88,18 @@ def area_under_curve(x):
 
 
 class AP_tester:
+    """
+    Class to test the models Average Precision and other statistics. While iterating through the
+    test batches, it's filled up with the model outputs.
+    """
     def __init__(self, dataset, device, image_size, model_strides):
+        """
+        Arguments:
+            dataset: Dataset - Dataset that the model is tested on
+            device: string - Device that the model lies on
+            image_size: tuple/list - size that the dataset images are resized to
+            model_strides: list - Strides of the last two convolutional layers of the network
+        """
         self.device = device
         self.dataset_len = len(dataset)
         self.image_size = image_size
@@ -86,17 +114,20 @@ class AP_tester:
 
         if self.inference:
             targets, bboxes = dataset.get_targets()
-            # bboxes = [bbox.to(device) for bbox in bboxes]
             self.all_bboxes = bboxes
         else:
             targets = dataset.get_targets()
         self.all_targets = torch.stack(targets).cpu()
-        # self.all_targets = self.all_targets.to(device)
-
-        # index to fill up the outputs
         self.i = 0
 
     def update(self, new_outputs, indices):
+        """
+        Add the outputs of the current batch
+        Arguments:
+            new_outputs: dict - Class scores and found peaks
+            indices: Indices of the images in the dataset. Only important if we test on the
+                     shuffled dataset
+        """
         self.all_indices.append(indices)
         if len(new_outputs['class_scores'].shape) == 2:
             batch_size = len(new_outputs['class_scores'])
@@ -109,6 +140,12 @@ class AP_tester:
         self.i += batch_size
 
     def run(self, compute_AP_loc=False, F1=False):
+        """
+        After iterating through all batches, compute the statistics. Afterwards reset all lists.
+        Arguments:
+            compute_AP_loc: bool - Compute the localization metrics
+            F1: bool - instead of AP, compute the F1-Score.
+        """
         self.all_indices = torch.hstack(self.all_indices)
         self.all_bboxes = itemgetter(*self.all_indices)(self.all_bboxes)
         self.all_targets = self.all_targets[self.all_indices]
@@ -127,6 +164,9 @@ class AP_tester:
         return {**AP_det, **AP_loc, **dist_error}
 
     def reset(self):
+        """
+        Reset all model outputs
+        """
         self.all_outputs = torch.zeros((self.dataset_len, self.n_classes), device=self.device)
         self.all_peaks = []
         self.all_peak_values = []
@@ -134,6 +174,7 @@ class AP_tester:
         self.i = 0
 
     def detection_AP(self):
+        """Compute the PR-Curve and Average Precision of the detection (total and classwise)"""
         preds = torch.sigmoid(self.all_outputs).cpu()
         n_classes = self.all_targets.shape[1]
         output = dict()
@@ -167,10 +208,17 @@ class AP_tester:
         return output
 
     def localization_AP(self, tolerance=8):
+        """
+        Compute the PR-Curve and Average Precision of the localization (total and classwise)
+        Arguments:
+            tolerance: int - number of pixels that we allow a peak to lie outside a bounding box.
+                             Should be the global stride.
+        """
         tolerance = tolerance * self.model_strides[0] * self.model_strides[1]
         peaks = self.all_peaks
         peak_values = self.all_peak_values
         bboxes = self.all_bboxes
+        assert len(peaks) == len(bboxes)
         steps = 100
         TP_cw, FP_cw, FN_cw = np.zeros((self.n_classes, steps)), np.zeros(
             (self.n_classes, steps)), np.zeros((self.n_classes, steps))
@@ -184,7 +232,6 @@ class AP_tester:
             boxes[:, [2]] = torch.minimum(boxes[:, [2]] + tolerance, torch.tensor(self.image_size[1]))
             boxes[:, [3]] = torch.minimum(boxes[:, [3]] + tolerance, torch.tensor(self.image_size[0]))
 
-            # boxes = torch.vstack((boxes, torch.tensor([[270., 180. ,320., 220.],[50., 50. ,80., 80.]])))
             for t_id, t in enumerate(torch.linspace(0, 1, steps)):
                 mask = peak_values[i] > t
                 if len(mask) == 0:
@@ -195,7 +242,6 @@ class AP_tester:
                 pred_pos = peaks[i][:, 1:].fliplr()[mask]
                 pred_labels = peaks[i][:, 0][mask]
 
-                # box_centers = torch.hstack(((boxes[:, [0]] + boxes[:, [2]]) / 2, (boxes[:, [1]] + boxes[:, [3]]) / 2))
                 a = boxes[:, None, :2] < pred_pos
                 b = boxes[:, None, 2:] > pred_pos
                 in_box = torch.all(torch.dstack((a, b)), dim=2)
@@ -231,10 +277,14 @@ class AP_tester:
         return output
 
     def distance_error(self):
+        """
+        Computes the average distance between a bounding box center and all predictions. In percent
+        of the diagonal length.
+        """
         peak_list = self.all_peaks
         peak_values = self.all_peak_values
         bbox_list = self.all_bboxes
-        # assert len(peak_list) == len(bboxes)
+        assert len(peak_list) == len(bbox_list)
         all_distances = []
         all_true_labels = []
         for peaks, peak_values, bboxes in zip(peak_list, peak_values, bbox_list):

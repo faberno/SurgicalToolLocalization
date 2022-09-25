@@ -3,7 +3,17 @@ from numbers import Number
 import numpy as np
 
 class RandomMasking(torch.nn.Module):
+    """
+    Random Masking from the paper "Hide-and-Seek: Forcing a Network to be Meticulous for
+    Weakly-supervised Object and Action Localization"
+    """
     def __init__(self, p_mask, patch_size, value):
+        """
+        Arguments:
+            p_mask: float (0.0-1.0) - probabilty that a patch gets masked
+            patch_size: int/tuple/list - size of the patches (must fit into the image)
+            value: number or list of three numbers - value of the patches
+        """
         super().__init__()
         if not isinstance(value, (Number, list)):
             raise TypeError("Argument value should be a number or list of numbers.")
