@@ -85,7 +85,7 @@ def train(config_file, export=False):
         model.test_losses.append((torch.sum(torch.tensor(model.test_batch_losses)) / len(val_dataset)).item())
         model.det_APs.append(AP['det_AP'])
         model.det_APs_cw.append(AP['det_AP_cw'])
-        if epoch % configuration['AP_loc_freq'] == 0:
+        if AP_loc:
             model.loc_APs.append(AP['loc_AP'])
             model.loc_APs_cw.append(AP['loc_AP_cw'])
         visualizer.print_current_epoch_loss(epoch, num_epochs, model=model, plot=True, AP=AP)
