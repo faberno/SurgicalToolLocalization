@@ -25,7 +25,7 @@
         "set": "test",
         "loader_params": {
             "batch_size": 5,
-            "shuffle": true,
+            "shuffle": false,
             "num_workers": 2,
             "pin_memory": true
         },
@@ -41,7 +41,7 @@
         "backbone": {
             "name": "resnet18",
             "options": {
-                "strides": [2, 2]
+                "strides": [1, 1]
             }
         },
         "structure": {
@@ -58,7 +58,7 @@
         },
         "export_path": "",
         "checkpoint_path": "/home/fabian/projects/python/SurgicalToolLocalization/checkpoints",
-        "load_checkpoint": "/home/fabian/projects/python/SurgicalToolLocalization/checkpoints/GP/resnet18-locmap-minmaxpooling_S22.pth"
+        "load_checkpoint": "/home/fabian/projects/python/SurgicalToolLocalization/checkpoints/final_checkpoints/resnet18-locmap-minmaxpooling_S11.pth"
     },
     "visualization_params": {
         "name": "2d segmentation"

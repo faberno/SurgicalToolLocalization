@@ -207,7 +207,7 @@ class AP_tester:
 
         return output
 
-    def localization_AP(self, tolerance=8):
+    def localization_AP(self, tolerance=8, classic=False):
         """
         Compute the PR-Curve and Average Precision of the localization (total and classwise)
         Arguments:
@@ -218,7 +218,7 @@ class AP_tester:
         peaks = self.all_peaks
         peak_values = self.all_peak_values
         bboxes = self.all_bboxes
-        assert len(peaks) == len(bboxes)
+        # assert len(peaks) == len(bboxes)
         steps = 100
         TP_cw, FP_cw, FN_cw = np.zeros((self.n_classes, steps)), np.zeros(
             (self.n_classes, steps)), np.zeros((self.n_classes, steps))
@@ -233,8 +233,11 @@ class AP_tester:
             boxes[:, [3]] = torch.minimum(boxes[:, [3]] + tolerance, torch.tensor(self.image_size[0]))
 
             for t_id, t in enumerate(torch.linspace(0, 1, steps)):
+                # if classic and len(peaks[i]) > 0:
+                #     mask = torch.logical_and(peak_values[i] > t, peak_values[i] == peak_values[i].max())
+                # else:
                 mask = peak_values[i] > t
-                if len(mask) == 0:
+                if len(mask) == 0 or torch.count_nonzero(mask) == 0:
                     for l in box_labels:
                         FN_cw[l, t_id] += 1
                         FN[t_id] += 1

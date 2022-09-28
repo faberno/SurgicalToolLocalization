@@ -30,7 +30,7 @@ def _max_filter(input):
 
 
 def find_peaks(crm, upsample_size=None, aggregation=False, win_size=11,
-               peak_filter=_median_filter):
+               peak_filter=_median_filter, threshold=0.8):
     """
     Find the peaks in the class response maps.
     Arguments:
@@ -110,7 +110,7 @@ def pooling_postprocess(inputs, inference):
     inputs['crm'][inputs['crm'] < 0] = 0
     inputs['crm'] /= torch.amax(inputs['crm'], dim=(2, 3), keepdim=True)
     inputs['crm'] = torch.nan_to_num(inputs['crm'])
-    peaks = find_peaks(inputs['crm'], aggregation=False)
+    peaks = find_peaks(inputs['crm'], aggregation=False, threshold=0.5)
     inputs.update(peaks)
     return inputs
 
