@@ -1,0 +1,27 @@
+detailed description of your own approach, discussion of alternatives, introduction of the experimental methodology and quality metrics
+
+
+We started with the initial assumption that the project can be divided into two challenges: Firstly, the classification, and secondly the localization. We found an approach that allows for both challenges to be addressed together relatively early on. Nonetheless we will firstly cover an early alternative approach, because it will help us showcase some inherent difficulties of the challenges that had to be overcome.
+
+We firstly decided to approach this as a problem where the images are, in a certain way, of a too high resolution. We mean this in the sense that there are tools and tissue, with the tissue obscuring the tools. We therefore followed the approach of Sun et.al (2021) to use a variational auto-encoder to reduce the images to little more than the tools, since those should be considered the most important parts of the image, or are at least the parts easiest to recognize for the De- and Encoder, since the tools appear more often than the respective tissue-structures.
+
+Image.
+
+Han et.al. (2017) presented a relatively straightforward VAE-model, that we decided to rebuild and adapt to our needs. 
+
+Image (Model and Result by Huan)
+
+Since we don't need any representation that keeps too much of the original image, we mainly trimmed the whole approach down.
+In the end, so we hoped. the instruments would be the parts that would at least to some extend be "saved over" to the other side of the image. We also experimented with the code (z), hoping it might encode the informating preserving locality, so that the interpretation of the code gives clues already. For this purpose we settled at around 500 latent variables, since less would not be usefull in terms of placing an object within an image. 
+
+The more straighforward approach here is of course threading the image through a needle, meaning a rather small latent variable space again, and then analysing the reconstruction. The hope was, that the image would preserve well distiguishable blobs where the tools were, so that we could filter the localization of the tools with some old-fashioned blob-detection via Otsus method or similar approaches (https://en.wikipedia.org/wiki/Otsu%27s_method).
+
+However, although the concept of VAEs is very intruiging, there is still one conceptional issue to address: Given a successfull localization of objects, how does one classify the image?
+The callenge is, that even when given only the part of the image with the tool itself, this would still leave us with having to solve a rather unpleasant classification problem, since all the images come annotated with all the classes originally in the image. This problem acompanied us during the whole project. The advantage in this case is, that we would stick with a one-label-classification problem, meaning that idealy only one label is true at any point. We are confident that this problem would have been solvable as well. But searching for a solution for the image-classification-part, we found that there was already a better approach.
+
+We build a first prototype of the VAE, but by the time we 
+
+The final model:
+For the underlying architecture of the final model we followed a straightforward and established approach: We worked with a well-performing backbone to extract features of the image and trained a fully connected convolutional layer based off of those features. 
+		The intuition: Perhaps an image that shows how that is meant.
+
