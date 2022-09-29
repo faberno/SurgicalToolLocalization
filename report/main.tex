@@ -47,6 +47,8 @@
 % Include PDF links
 %\usepackage[pdftex, bookmarks=true]{hyperref}
 \usepackage{setspace}
+\usepackage{sistyle}
+\SIthousandsep{,}
 \usepackage{array}
 % hyperrefs in the documents
 \usepackage[bookmarks=true,colorlinks,pdfpagelabels,pdfstartview = FitH,bookmarksopen = true,bookmarksnumbered = true,linkcolor = black,plainpages = false,hypertexnames = false,citecolor = black,urlcolor=black]{hyperref} 
@@ -171,10 +173,10 @@ by\\[0.5cm]
 what is the problem? why is it interesting? what are the main obstacles? (2 Seiten)
 
 \section{Motivation}
-\input{1_intro/motivation}\alert{text}
+\input{1_intro/motivation}
 
 \section{Objectives \& Structure}
-\input{1_intro/objectives}
+%\input{1_intro/objectives}
 
 \newpage
 
@@ -192,8 +194,7 @@ detailed description of your own approach, discussion of alternatives, introduct
 \input{3_methodology/methodology}
 \chapter{Experiments}
 \label{chap:experiments}
-
-description of experiments, diagrams, comparison with results of prior work, interpretation of the experimental outcomes (7-8 Seiten)
+\input{4_experiments/experiments}
 
 \chapter{Summary and Future Work}
 \label{chap:summary}
@@ -213,7 +214,7 @@ Beschreibung vom Code (2 Seiten)
 
 
 
-\bibliographystyle{apalike}
+\bibliographystyle{plain}
 % b) The File:
 \bibliography{references}
 
