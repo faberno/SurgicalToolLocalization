@@ -1,7 +1,9 @@
 2 Seiten
 
 \section{Problem Description}
-detailed description of the problem
+The problem we strived to solve was classifying and localizing surgical instruments in endoscopic images, and in extend in videos as well. 
+To that end we registered to the Grand Challenge "SurgToolLoc. Surgical tool localization in endoscopic videos", which was part of a challenge by the Medical Image Computing and Computer Assisted Intervention Society (MICCAI, the website on the challenge can be found \href{https://surgtoolloc.grand-challenge.org}{here}), that published their training-data on the 29th April, 2022 and excepted last entries until the 8th September, 2022. The data is composed of weakly annotated videos of surgical training exercises, which means that the annotation is not true for every frame, and no localization ground truth is available (more on the \textit{SurgToolLoc}-dataset in section 4.1.1). In total there where 14 possible class labels. Due to technical difficulties and slow responses on the side of the organizers we were unable to test our localization-performance on the test set. For that reason we trained further models on the \textit{Cholec18}-dataset that does not come with bounding-boxes, and a subset of it, the \textit{M2CAI16}-dataset that is equipped with bounding boxes, which makes comparisons of average-precision of our model to state-of-the-art-models possible.
+
 \section{Related Work}
 discussion of prior work
 
