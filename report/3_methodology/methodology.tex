@@ -53,7 +53,13 @@ This has two reasons: Firstly, the data was very unbalanced (see table 1). Secon
 
 To this end swapped the colour-channels randomly, flipped the image with a 50\% chance, rotated it between 0 and 90 degrees, masked and cropped the images. Masking means that we set some regions of the image to the mean value of the rest of the image. The regions where selected in the following way: Any image was divided into 24x24-tiles, with every tile having a 50\% chance of being masked. Since this is basically the binomial distribution we can expect that around half of the tiles are masked everytime. This can look like this:
 
-masked image:
+\begin{figure}
+	\centering
+	\includegraphics[width=10cm]{3_methodology/masked}
+	\caption{Example for a masked image.}
+	\label{fig:Masked}
+\end{figure}
+
 
 Another measure covered in the lecture on data-augmentation was the fact, that some falsely-annotated data put into the training-set might also serve the generalization-abilities of the network. We decided against any such measure, since the multi-classification of the entire clip presented us with more falsely annotated images than we might have wished for.
 
