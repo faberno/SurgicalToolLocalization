@@ -4,11 +4,31 @@ We started with the initial assumption that the project can be divided into two 
 
 We firstly decided to approach this as a problem where the images are, in a certain way, of a too high resolution. We mean this in the sense that there are tools and tissue, with the tissue obscuring the tools. We therefore followed the approach of Sun et.al (2021) to use a variational auto-encoder to reduce the images to little more than the tools, since those should be considered the most important parts of the image, or are at least the parts easiest to recognize for the De- and Encoder, since the tools appear more often than the respective tissue-structures.
 
-Image.
+\begin{figure}
+	\centering
+	\includegraphics[width=10cm]{3_methodology/Tools}
+	\caption{As one can imagine the tools do stand out - sometimes...}
+	\label{fig:Tools_Good}
+\end{figure}
+This of course is a rather naive assumption.
+\begin{figure}
+	\centering
+	\includegraphics[width=10cm]{3_methodology/tools_bad}
+	\caption{And sometimes not so much.}
+	\label{fig:Tools_Bad}
+\end{figure}
+
+
 
 Han et.al. (2017) presented a relatively straightforward VAE-model, that we decided to rebuild and adapt to our needs. 
 
-Image (Model and Result by Huan)
+\begin{figure}
+	\centering
+	\includegraphics[width=10cm]{3_methodology/VAE_arch}
+	\caption{Architecture (top) and result (bottom).}
+	\label{fig:VAE}
+\end{figure}
+
 
 Since we don't need any representation that keeps too much of the original image, we mainly trimmed the whole approach down.
 In the end, so we hoped. the instruments would be the parts that would at least to some extend be "saved over" to the other side of the image. We also experimented with the code (z), hoping it might encode the information preserving locality, so that the interpretation of the code gives clues already. For this purpose we settled at around 500 latent variables, since less would not be useful in terms of placing an object within an image. 
@@ -23,7 +43,13 @@ The challenge is, that even when given only the part of the image with the tool 
 We build a first prototype of the VAE, but training was impossible at first due to the handling of the huge dataset that we used first, that comprised of over 100GB of image data. More on that in the experimentation-section. However, the sheer amount of data was not the main issue, but it points to another issue: We could not simply take the data, split it up into a training-, validation- and test-set and perform SGD on the training-set. 
 This has two reasons: Firstly, the data was very unbalanced (see table 1). Secondly, and more importantly, we had to somehow make sure that the model would not learn something else, an issue that can be illustrated by some funny and some rather sinister examples (https://www.forbes.com/sites/korihale/2021/09/02/ai-bias-caused-80-of-black-mortgage-applicants-to-be-denied/).
 
-Table: Balance of data.
+\begin{figure}[h]
+	\centering
+	\includegraphics[width=15cm]{4_experiments/images/surgtoolloc_frequencies.pdf}
+	\caption{Tool frequencies of the \emph{SurgToolLoc} dataset (video-level) and its subset (frame-level).}
+	\label{fig:surgtoolloc_tool_frequencies}
+\end{figure}
+
 
 To this end swapped the colour-channels randomly, flipped the image with a 50\% chance, rotated it between 0 and 90 degrees, masked and cropped the images. Masking means that we set some regions of the image to the mean value of the rest of the image. The regions where selected in the following way: Any image was divided into 24x24-tiles, with every tile having a 50\% chance of being masked. Since this is basically the binomial distribution we can expect that around half of the tiles are masked everytime. This can look like this:
 
@@ -32,13 +58,11 @@ masked image:
 Another measure covered in the lecture on data-augmentation was the fact, that some falsely-annotated data put into the training-set might also serve the generalization-abilities of the network. We decided against any such measure, since the multi-classification of the entire clip presented us with more falsely annotated images than we might have wished for.
 
 Having the data handled we went on exploring possible solutions to classifying the images. We therefore turned to CNNs, that, as we covered in the lecture, proved quite useful in image-classification-challenges. One interesting aspect of CNNs like the ResNET-models is that, before reducing the output of the last hidden layer to logits of the class-probabilities, these models preserve some of the size and locality of the input since the transformations are mainly convolutional in character. This means that the ResNets forward-pass can be intercepted, while the locality of the discovered features is preserved.
-This also means that by computing a fully connected convolution one gets a heat-map for all the tools. We learnt about this procedure from the paper by ..., but it is fairly common already. It is quite obvious that a well-performing network that returns heat-maps of the tools presence renders any other effort to localize tools obsolete. Since this is the concept we eventually pursued, we will cover it in more detail:
+This also means that by computing a fully connected convolution one gets a heat-map for all the tools \citep{classpeak}. This procedure is fairly common already (see section 2.2). It is quite obvious that a well-performing network that returns heat-maps of the tools presence renders any other effort to localize tools obsolete. Since this is the concept we eventually pursued, we will cover it in more detail:
 
 \section{The final model:}
 For the underlying architecture of the final model we followed a straightforward and established approach: We worked with a well-performing backbone to extract features of the image and trained a convolutional layer based off of those features. This results in a heat-map, that can be further processed.
 The fully connected convolutional layer thereby replaces the sliding-window-approach, because it essentially performs the work of a fully-connected layer on a small part of the image, but, exploiting the convolutional nature of the layer, more efficiently than iterating with a fully connected layer over parts of the image over and over again. 
-
-The intuition: Perhaps tow images that show how that is meant, one of the heatmap, the other one of the sliding.
 
 Backbones are an effective way to adapt networks proven to be effective on certain problems, in this case feature extraction, to different challenges. This approach is so successful, because although each of the backbones we used was originally applied to other image-classification-tasks, it appears that until the last few layers, the main work that is being done by the net is extracting features within the image. This leaves the task of "making sense" of these features to the last layer. The opportunity therefore lies in the possibility of omitting these last layers, and to train only the last layer for the specific task at hand (see for example the paper by \cite{https://doi.org/10.48550/arxiv.2206.08016}) As they point out, there are certain networks that have become common choices.
 We tried and experimented with three backbones, each of which come with different depths: The ResNet by \cite{https://doi.org/10.48550/arxiv.1512.03385}, the AlexNet by \cite{krizhevsky2017imagenet} and the VGG-Net by \cite{https://doi.org/10.48550/arxiv.1409.1556}.
@@ -50,8 +74,8 @@ The localization and classification of the tools is being determined via the hea
 
 \section{Training}
 
-The training was carried out using mini-batch stochastic gradient descent with batch size ???. We monitored both training and validation losses as well as average precision and accuracy.  After every iteration over the dataset we validated the training progress on a completely separate set.
-As mentioned earlier, contrary to what we were used to we looked at a multi-label-classification problem. This had to be taken into account when choosing a loss function. We went with the common choice ??? as recommended by  ???.
+The training was carried out using mini-batch stochastic gradient descent with different batch sizes, ranging from 2 to 50. We monitored both training and validation losses as well as average precision and accuracy.  After every iteration over the dataset we validated the training progress on a completely separate set.
+As mentioned earlier, contrary to what we were used to we looked at a multi-label-classification problem. This had to be taken into account when choosing a loss function. We went with the multi-label soft margin loss.
 
 \subsection{Training workflow}
 
@@ -63,7 +87,7 @@ We used ColabPro to compute the training. Doing so means that both the data and 
 
 \subsection{Hyper-parameter tuning}
 We tuned the following hyper parameters: 
-We did so by training approx. ??? combinations for each 50 epochs on a smaller dataset, during each epoch we collected the quality metrics of each for each parameter-combination and epoch. Based off of these data points we ran a gaussian process by iterating over a much tighter net of hyper parameters, searching for a combination that appeared promising in terms of further training. We picked the gaussian process from the sklearn-library and went with the recommended parameters.
+We did so by training 8-50 combinations for each 50 epochs on a smaller dataset, during each epoch we collected the quality metrics of each for each parameter-combination and epoch. Based off of these data points we ran a gaussian process by iterating over a much tighter net of hyper parameters, searching for a combination that appeared promising in terms of further training. We picked the gaussian process from the sklearn-library and went with the recommended parameters.
 The main difficulty that emerged using this process is that we had to assign a value to the data points that we collected for each combination of parameters. It seems important to take not just the best-performing model at any epoch, but also a model that shows continued improvement as well as overall good performance. We tried different approaches, but stuck to a simple one by calculating the mean and adding the weighed minimum to it. 
 
 Apart from that we just had to try some options intuitively, especially which pooling-function or backbone to use. This will be one main part of the experiment-section.
@@ -73,4 +97,3 @@ Apart from that we just had to try some options intuitively, especially which po
 We used the precision-recall-metric as well as the precision-recall-curve, the F1-score (that merely combines the precision- and recall-values), the area under the ROC-Curve, the average precision, the average distance between a bounding box centre and all predictions in percent of the diagonal length (for localization). The average precision metric was also used to interpret the localization performance. All these metrics were applicable, since we took care in balancing the classes, which is, at least for the classification part, an important prerequisite. Some of the metrics provide redundant information (especially true for the F1-score and the precision-recall-metric), although some of them are easier to interpret on the spot. But it does not seem to hurt to in doubt calculate more metrics than necessary.
 When it comes to assess the quality of the model, we mainly looked towards papers that covered similar problems. For instance, \cite{Vardazaryan} used average precision to evaluate the binary tool presence classification as well as the localization. We not only looked at these papers for inspiration, but also as a benchmark we wanted to achieve as well, meaning that average precision of over 90\% for all tools was the overall goal (as achieved by \cite{Vardazaryan}, \cite{endonet} and \cite{lstm}).
 
-This concludes the methodology.
