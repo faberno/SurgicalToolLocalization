@@ -1,18 +1,37 @@
-2 Seiten
-
 \section{Problem Description}
 The problem we strived to solve was classifying and localizing surgical instruments in endoscopic images, and in extend in videos as well. 
-To that end we registered to the Grand Challenge "SurgToolLoc. Surgical tool localization in endoscopic videos", which was part of a challenge by the Medical Image Computing and Computer Assisted Intervention Society (MICCAI, the website on the challenge can be found \href{https://surgtoolloc.grand-challenge.org}{here}), that published their training-data on the 29th April, 2022 and excepted last entries until the 8th September, 2022. The data is composed of weakly annotated videos of surgical training exercises, which means that the annotation is not true for every frame, and no localization ground truth is available (more on the \textit{SurgToolLoc}-dataset in section 4.1.1). In total there where 14 possible class labels. Due to technical difficulties and slow responses on the side of the organizers we were unable to test our localization-performance on the test set. For that reason we trained further models on the \textit{Cholec18}-dataset that does not come with bounding-boxes, and a subset of it, the \textit{M2CAI16}-dataset that is equipped with bounding boxes, which makes comparisons of average-precision of our model to state-of-the-art-models possible.
+To that end we registered to the Grand Challenge "SurgToolLoc. Surgical tool localization in endoscopic videos", which was part of a challenge by the Medical Image Computing and Computer Assisted Intervention Society (MICCAI, the website on the challenge can be found \href{https://surgtoolloc.grand-challenge.org}{here}), that published their training-data on the 29th April, 2022 and excepted last entries until the 8th September, 2022. The data is composed of weakly annotated videos of surgical training exercises, which means that the annotation is not true for every frame, and no localization ground truth is available (more on the \textit{SurgToolLoc}-dataset in section 4.1.1). In total there where 14 possible class labels. Due to technical difficulties and slow responses on the side of the organizers we were unable to test our localization-performance on the test set. For that reason we trained further models on the \textit{Cholec18}-dataset(7 classes) that does not come with bounding-boxes, and a subset of it, the \textit{M2CAI16}-dataset (7 classes) that is equipped with bounding boxes, which makes comparisons of average-precision of our model to state-of-the-art-models possible (detailed descriptions in section 4.1).
+In a nutshell, the demands came down to the following:
+\begin{itemize}
+	\item Classifying up to 3 out of 14 tools in one image (multi-level-classification).
+	\item Localizing the tools.
+	\item Using only weakly-annotated training-data.
+	\item (Mostly) without bounding boxes and the like.
+	\item Ability of the model to perform on multiple datasets.
+\end{itemize}
 
 \section{Related Work}
-discussion of prior work
+The challenge of localizing tools in endoscopic images has been taken on discussion of prior work
 
 \section{ML-Tools}
-introduction of relevant machine learning tools
+Introduction of relevant machine learning tools.
 
-\subsection{Convolutional Networks}
+\subsection{Convolutional Neural Networks}
+In contrast to fully connected neural networks, convolutional neural networks (CNNs) exploit spatially local correlation by enforcing a sparse local connectivity pattern between neurons of adjacent layers: each neuron is connected to only a small region of the input volume.
+This means, that the hidden layers include layers that perform convolutions using a convolution kernel. As the convolution kernel moves along the input matrix for the layer, the convolution operation generates a feature map, which in turn contributes to the input of the next layer. This may be combined with other layers such as pooling layers, fully connected layers, and normalization layers. Essentially, CNNs take advantage of the hierarchical pattern in data and assemble patterns of increasing complexity using smaller and simpler patterns embossed in their filters. As a result, the network learns filters that activate when it detects some specific type of feature at some spatial position in the input
+
 \subsection{(Variational) Auto Encoder}
+Auto encoders (AE) can be considered as a pair of neural networks, where the first part (the encoder) translates the input to a lower dimensional latent space. The second part (the decoder) then tries to reconstruct the original input using the the information provided via the latent space. Variational auto encoders learn a latent distribution (rather than representation), that can be drawn from. The decoder then proceeds as before. One advantage can be, that the variational auto encoder (VAE) avoids overfitting in the latent space. On a side note: The other main advantage of a VAE compared to an AE is that it is better suited for generative purposes.
+
 \subsection{Backbones}
+In the image-processing context, backbones are networks that provide feature-maps. Based on these feature maps, one trains a so called "head", that does the intended task of the model. Backbones are usually trained on ImageNet. Usual choices are the AlexNets or ResNets.
+
 \subsection{Data Augmentation and Semi-Supervised Learning}
-\subsection{Gaussian Process and Bayesian Optimization}
+Data augmentation are techniques used to increase the amount of data by adding slightly modified copies of already existing data or newly created synthetic data from existing data. More importantly, it acts as a regularizer and helps reduce overfitting when training a machine learning model. 
+Semi-supervised learning is an approach to machine learning that combines a small amount of labeled data with a large amount of unlabeled data during training.
+
+\subsection{Gaussian Process}
+Gaussian processes can be seen as an infinite-dimensional generalization of multivariate normal distributions.They are useful in statistical modelling, benefiting from properties inherited from the normal distribution. For example, if a random process is modelled as a Gaussian process, the distributions of various derived quantities can be obtained explicitly. In the context of our project we used Gaussian processes to optimize certain hyper parameters in our training. 
+
 \subsection{Sliding Windows Approach}
+The sliding windows approach means to have a classifier evaluate smaller parts of images as to whether an object is present, to then compute the place of said object in the image. It is computationally expensive, since for every part of the image a forward-pass of the classifier is needed. 
