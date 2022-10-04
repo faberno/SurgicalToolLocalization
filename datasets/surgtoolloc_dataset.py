@@ -67,7 +67,12 @@ class surgtoollocDataset(BaseDataset):
         if len(img.shape) == 4:
             img = img.squeeze(0)
 
-        return img, target
+        out = {
+            'idx': torch.tensor(idx),
+            'img': img,
+            'target': target
+        }
+        return out
 
     def get_targets(self):
         return [f['labels'] for f in self.files]

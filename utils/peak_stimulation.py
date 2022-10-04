@@ -40,8 +40,11 @@ class PeakStimulation(Function):
         # peak filtering
         if peak_filter:
             mask = input >= peak_filter(input)
-            mask_mean = (input > torch.mean(input, dim=(2, 3), keepdim=True)) & (input > threshold)
-            peak_map = (peak_map & mask & mask_mean)
+            if threshold is not None:
+                mask_mean = (input > torch.mean(input, dim=(2, 3), keepdim=True)) & (input > threshold)
+                peak_map = (peak_map & mask & mask_mean)
+            else:
+                peak_map = (peak_map & mask)
         peak_list = torch.nonzero(peak_map)
         ctx.mark_non_differentiable(peak_list)
 

@@ -96,8 +96,9 @@ class Visualizer():
             message += f'[epoch: {epoch}/{max_epochs}] Train Loss: {model.train_losses[-1]:.6f} Test Loss: {model.test_losses[-1]:.6f} \n'
         if AP is not None:
             message += f'\nDetection AP: {AP["det_AP"]}, AP(class): {AP["det_AP_cw"].tolist()}'
-        if 'loc_AP' in AP:
-            message += f'\nLocalization AP: {AP["loc_AP"]}, AP(class): {list(AP["loc_AP_cw"])}'
+        if AP is not None:
+            if 'loc_AP' in AP:
+                message += f'\nLocalization AP: {AP["loc_AP"]}, AP(class): {list(AP["loc_AP_cw"])}'
         message += "\n------------------------------------------------------------\n"
         print(message)  # print the message
 
@@ -109,28 +110,29 @@ class Visualizer():
                 plt.legend()
                 plt.show()
 
-            if 'loc_PR_curve' in AP:
-                classlist = list(model.classes.keys())
-                plt.plot(AP['det_PR_curve'][1], AP['det_PR_curve'][0], label="all", linewidth=3,
-                         linestyle='dashed')
-                for i, curve in enumerate(AP['det_PR_curve_cw']):
-                    plt.plot(curve[1], curve[0], label=classlist[i])
-                plt.title('Detection Precision-Recall')
-                plt.xlim(0, 1)
-                plt.ylim(0, 1)
-                plt.legend()
-                plt.show()
+            if AP is not None:
+                if 'loc_PR_curve' in AP:
+                    classlist = list(model.classes.keys())
+                    plt.plot(AP['det_PR_curve'][1], AP['det_PR_curve'][0], label="all", linewidth=3,
+                             linestyle='dashed')
+                    for i, curve in enumerate(AP['det_PR_curve_cw']):
+                        plt.plot(curve[1], curve[0], label=classlist[i])
+                    plt.title('Detection Precision-Recall')
+                    plt.xlim(0, 1)
+                    plt.ylim(0, 1)
+                    plt.legend()
+                    plt.show()
 
-            if 'loc_PR_curve' in AP:
-                plt.plot(AP['loc_PR_curve'][1], AP['loc_PR_curve'][0], label="all", linewidth=3,
-                         linestyle='dashed')
-                for i, curve in enumerate(AP['loc_PR_curve_cw']):
-                    plt.plot(curve[1], curve[0], label=classlist[i])
-                plt.title('Localization Precision-Recall')
-                plt.xlim(0, 1)
-                plt.ylim(0, 1)
-                plt.legend()
-                plt.show()
+                if 'loc_PR_curve' in AP:
+                    plt.plot(AP['loc_PR_curve'][1], AP['loc_PR_curve'][0], label="all", linewidth=3,
+                             linestyle='dashed')
+                    for i, curve in enumerate(AP['loc_PR_curve_cw']):
+                        plt.plot(curve[1], curve[0], label=classlist[i])
+                    plt.title('Localization Precision-Recall')
+                    plt.xlim(0, 1)
+                    plt.ylim(0, 1)
+                    plt.legend()
+                    plt.show()
 
     def plot_validation_images(self, originals, heatmaps, targets=None, peaks=None, bboxes=None,
                                figsize=None, alpha=0.5, save=None):

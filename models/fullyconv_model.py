@@ -26,7 +26,12 @@ class FullyConvModel(BaseModel):
         for m in structure['modules']:
             module = find_module_using_name(m)
             if m == 'locmap':
-                num_features = list(self.module_list[-1].modules())[-2].out_channels
+                num_features = None
+                mod_list = list(self.module_list[-1].modules())
+                for i in range(len(mod_list)-1, -1, -1):
+                    if mod_list[i]._get_name() == 'Conv2d':
+                        num_features = mod_list[i].out_channels
+                        break
                 self.module_list.append(module(num_features, config['n_classes']))
 
         self.pooling = find_module_using_name(structure['pooling'])

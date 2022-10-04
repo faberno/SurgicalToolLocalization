@@ -57,6 +57,18 @@ class BaseModel(nn.Module):
         self.optimizer.step()
         self.optimizer.zero_grad()
 
+    def train_seg_minibatch(self, inputs):
+        data = transfer_to_device(inputs['img'], self.device)
+        label = transfer_to_device(inputs['target'], self.device)
+
+        output = self(data)
+        loss = self.criterion_loss(output['class_scores'], label, reduction='mean')
+        loss.backward()  # calculate gradients
+        self.optimizer.step()
+        self.optimizer.zero_grad()
+
+
+
     def test_minibatch(self, inputs, ap_tester=None):
         data = transfer_to_device(inputs['img'], self.device)
         label = transfer_to_device(inputs['target'], self.device)

@@ -1,37 +1,39 @@
 {
     "train_dataset_params": {
-        "dataset_name": "surgtoolloc",
-        "dataset_path": "/content/surgtoollocsubset/",
+        "dataset_name": "cholec80",
+        "dataset_path": "/content/cholec80_sub",
         "set": "trainval",
         "loader_params": {
-            "batch_size": 200,
+            "batch_size": 50,
             "shuffle": true,
             "num_workers": 2,
             "pin_memory": true
         },
         "transforms": {
             "toTensor": true,
-            "resize": [420, 600],
+            "resize": [336, 600],
             "flip": 0.5,
-            "masking": [0.5, [30, 30]],
+            "masking": [0.5, [24, 24]],
             "rotation": 90,
-            "normalize": true
+            "normalize": true,
+            "channelswitcher": false
         }
     },
     "val_dataset_params": {
-        "dataset_name": "surgtoolloc",
-        "dataset_path": "/content/surgtoollocsubset/",
+        "dataset_name": "cholec80",
+        "dataset_path": "/content/cholec80_sub",
         "set": "test",
         "loader_params": {
-            "batch_size": 200,
+            "batch_size": 50,
             "shuffle": false,
             "num_workers": 2,
-            "pin_memory": false
+            "pin_memory": true
         },
         "transforms": {
             "toTensor": true,
-            "resize": [420, 600],
-            "normalize": true
+            "resize": [336, 600],
+            "normalize": true,
+            "channelswitcher": false
         }
     },
     "model_params": {
@@ -39,25 +41,24 @@
         "backbone": {
             "name": "resnet18",
             "options": {
-                "strides": [2, 2]
+                "strides": [1, 2]
             }
         },
         "structure": {
             "modules": ["locmap"],
-            "pooling": "minmaxpooling",
-            "multimaps": false
+            "pooling": "minmaxpooling"
         },
-        "max_epochs": 60,
+        "max_epochs": 50,
         "optimizer": {
             "lr": [0.01, 0.01],
-            "lr_milestones": [30, 45],
+            "lr_milestones": [35, 45],
             "gamma": 0.45,
             "momentum": 0.9,
             "weight_decay": 1e-3
         },
         "export_path": "",
-        "checkpoint_path": "/content/drive/MyDrive/checkpoints/surgtoolloc",
-        "load_checkpoint": "/content/drive/MyDrive/checkpoints/surgtoolloc/04_10_2022-03:21/resnet18-locmap-minmaxpooling_S22.pth"
+        "checkpoint_path": "/content/drive/MyDrive/checkpoints/cholec80/final/strides/22",
+        "load_checkpoint": ""
     },
     "visualization_params": {
         "name": "2d segmentation"

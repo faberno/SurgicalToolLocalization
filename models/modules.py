@@ -30,7 +30,7 @@ def _max_filter(input):
 
 
 def find_peaks(crm, upsample_size=None, aggregation=False, win_size=11,
-               peak_filter=_median_filter, threshold=0.8):
+               peak_filter=_median_filter, threshold=0.8, inference=True):
     """
     Find the peaks in the class response maps.
     Arguments:
@@ -43,13 +43,19 @@ def find_peaks(crm, upsample_size=None, aggregation=False, win_size=11,
     """
     out = dict()
     if aggregation:
+        if not inference:
+            threshold = None
         peak_list, aggregation = peak_stimulation(crm, return_aggregation=aggregation,
-                                                  win_size=win_size, peak_filter=peak_filter)
+                                                  win_size=win_size, peak_filter=peak_filter,
+                                                  threshold=threshold)
         out['class_scores'] = aggregation
     else:
         peak_list = peak_stimulation(crm, return_aggregation=aggregation, win_size=win_size,
                                      peak_filter=peak_filter)
-    peak_values = crm[peak_list[:, 0], peak_list[:, 1], peak_list[:, 2], peak_list[:, 3]]
+    if inference:
+        peak_values = crm[peak_list[:, 0], peak_list[:, 1], peak_list[:, 2], peak_list[:, 3]]
+    else:
+        peak_values = None
     if upsample_size is not None:
         upsample = torch.tensor([upsample_size[0] / crm.shape[2], upsample_size[1] / crm.shape[3]],
                                 device=peak_list.device)
@@ -58,8 +64,9 @@ def find_peaks(crm, upsample_size=None, aggregation=False, win_size=11,
         peak_list_upsample[:, 2:] *= upsample[None, :]
         peak_list = peak_list_upsample.round().int()
 
-    out['peak_list'] = peak_list
-    out['peak_values'] = peak_values
+    if inference:
+        out['peak_list'] = peak_list
+        out['peak_values'] = peak_values
     return out
 
 
@@ -74,10 +81,10 @@ def minmaxpooling(crm, upsample_size, inference=True):
     """
     maxpool = F.max_pool2d(crm, crm.shape[2:]).squeeze()
     minpool = F.max_pool2d(-crm, crm.shape[2:]).squeeze()
+    output = {'class_scores': maxpool - 0.6 * minpool}
     if inference and crm.shape[-2:] != torch.Size(upsample_size):
         crm = interpolate(crm, upsample_size, mode='bilinear', align_corners=True)
-    output = {'class_scores': maxpool - 0.6 * minpool,
-              'crm': crm}
+        output['crm'] = crm
     return pooling_postprocess(output, inference)
 
 
@@ -93,8 +100,9 @@ def peakresponsepooling(crm, upsample_size, inference=True):
     """
     if crm.shape[-2:] != torch.Size(upsample_size):
         crm = interpolate(crm, upsample_size, mode='bilinear', align_corners=True)
-    out = find_peaks(crm, aggregation=True)
-    out['crm'] = crm
+    out = find_peaks(crm, aggregation=True, inference=inference, threshold=-torch.inf)
+    if inference:
+        out['crm'] = crm
     return pooling_postprocess(out, inference)
 
 

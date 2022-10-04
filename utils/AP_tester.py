@@ -92,7 +92,7 @@ class AP_tester:
     Class to test the models Average Precision and other statistics. While iterating through the
     test batches, it's filled up with the model outputs.
     """
-    def __init__(self, dataset, device, image_size, model_strides):
+    def __init__(self, dataset, device, image_size, model_strides, backbone):
         """
         Arguments:
             dataset: Dataset - Dataset that the model is tested on
@@ -111,6 +111,10 @@ class AP_tester:
         self.all_outputs = torch.zeros((self.dataset_len, self.n_classes), device=device)
         self.inference = dataset.inference
         self.model_strides = model_strides
+        if backbone[:6] == 'resnet':
+            self.tolerance = 8
+        else:
+            self.tolerance = 16
 
         if self.inference:
             targets, bboxes = dataset.get_targets()
@@ -147,13 +151,13 @@ class AP_tester:
             F1: bool - instead of AP, compute the F1-Score.
         """
         self.all_indices = torch.hstack(self.all_indices)
-        self.all_bboxes = itemgetter(*self.all_indices)(self.all_bboxes)
         self.all_targets = self.all_targets[self.all_indices]
         if F1:
             AP_det = compute_F1(torch.sigmoid(self.all_outputs), self.all_targets)
         else:
             AP_det = self.detection_AP()
         if self.inference and compute_AP_loc:
+            self.all_bboxes = itemgetter(*self.all_indices)(self.all_bboxes)
             dist_error = self.distance_error()
             AP_loc = self.localization_AP()
 
@@ -207,14 +211,14 @@ class AP_tester:
 
         return output
 
-    def localization_AP(self, tolerance=8, classic=False):
+    def localization_AP(self, classic=False):
         """
         Compute the PR-Curve and Average Precision of the localization (total and classwise)
         Arguments:
             tolerance: int - number of pixels that we allow a peak to lie outside a bounding box.
                              Should be the global stride.
         """
-        tolerance = tolerance * self.model_strides[0] * self.model_strides[1]
+        tolerance = self.tolerance * self.model_strides[0] * self.model_strides[1]
         peaks = self.all_peaks
         peak_values = self.all_peak_values
         bboxes = self.all_bboxes

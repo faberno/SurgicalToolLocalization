@@ -10,7 +10,7 @@ with zipfile.ZipFile("files.zip", "w") as zf:
                 zf.write(filename)
             continue
         continuehere = False
-        for notallowed in ['./checkpoints', './.git', './.idea', './report']:
+        for notallowed in ['./checkpoints', './.git', './.idea', './report', './paper']:
             if dirname.startswith(notallowed):
                 continuehere = True
                 break

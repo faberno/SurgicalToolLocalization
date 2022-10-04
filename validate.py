@@ -37,7 +37,8 @@ def validate(config_file):
     visualizer = Visualizer(configuration['visualization_params'])   # create a visualizer that displays images and plots
 
     print('Initializing AP_Tester...')
-    ap_tester = AP_tester(val_dataset.dataset, model.device, val_dataset.dataset.resize, model.configuration['backbone']['options']['strides'])
+    ap_tester = AP_tester(val_dataset.dataset, model.device, val_dataset.dataset.resize, model.configuration['backbone']['options']['strides'],
+                          model.configuration['backbone']['name'])
 
     start_time = time.time()  # timer for entire epoch
 
