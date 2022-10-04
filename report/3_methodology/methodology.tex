@@ -41,15 +41,7 @@ The challenge is, that even when given only the part of the image with the tool 
 \section{Data management}
 
 We build a first prototype of the VAE, but training was impossible at first due to the handling of the huge dataset that we used first, that comprised of over 100GB of image data. More on that in the experimentation-section. However, the sheer amount of data was not the main issue, but it points to another issue: We could not simply take the data, split it up into a training-, validation- and test-set and perform SGD on the training-set. 
-This has two reasons: Firstly, the data was very unbalanced (see table 1). Secondly, and more importantly, we had to somehow make sure that the model would not learn something else, an issue that can be illustrated by some funny and some rather sinister examples (https://www.forbes.com/sites/korihale/2021/09/02/ai-bias-caused-80-of-black-mortgage-applicants-to-be-denied/).
-
-\begin{figure}[h]
-	\centering
-	\includegraphics[width=15cm]{4_experiments/images/surgtoolloc_frequencies.pdf}
-	\caption{Tool frequencies of the \emph{SurgToolLoc} dataset (video-level) and its subset (frame-level).}
-	\label{fig:surgtoolloc_tool_frequencies}
-\end{figure}
-
+This has two reasons: Firstly, the data was very unbalanced (see \ref{fig:surgtoolloc_tool_frequencies}). Secondly, and more importantly, we had to somehow make sure that the model would not learn something else, an issue that can be illustrated by some funny and some rather sinister examples (https://www.forbes.com/sites/korihale/2021/09/02/ai-bias-caused-80-of-black-mortgage-applicants-to-be-denied/).
 
 To this end swapped the colour-channels randomly, flipped the image with a 50\% chance, rotated it between 0 and 90 degrees, masked and cropped the images. Masking means that we set some regions of the image to the mean value of the rest of the image. The regions where selected in the following way: Any image was divided into 24x24-tiles, with every tile having a 50\% chance of being masked. Since this is basically the binomial distribution we can expect that around half of the tiles are masked everytime. This can look like this:
 
