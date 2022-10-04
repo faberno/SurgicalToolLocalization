@@ -33,12 +33,12 @@ The \emph{Cholec80} dataset \cite{endonet} is provided by the \emph{CAMMA} resea
 	\label{fig:cholec80_tools}
 \end{figure}
 
-Similar to before, this number of frames would have been unmanageable for us, so we again created a subset, of this time 6000 frames, randomly sampled from all classes. While in the original set, the factor between the least and most appearing tool is about 30, it's only 4.5 in the subset. A complete class-balance would be hard to achieve, as some of the tools, like the Grasper, almost exclusively are used with the other tools together.
+Similar to before, this number of frames would have been unmanageable for us, so we again created a subset, of this time 6000 frames, randomly sampled from all classes. While in the original set, the factor between the least and most appearing tool is about 30, it's only 4.5 in the subset. A complete class-balance would be hard to achieve, as some of the tools, like the Grasper, are used almost exclusively with the other tools together.
 
 
 \subsection{M2CAI16}
 
-The \emph{M2CAI16} dataset contains \num{2811} frames (\num{2248} for training and \num{563} for testing) gathered from the videos 61-76 in \emph{Cholec80}. Every frame is fully annotated with tool presence labels and bounding boxes. Its size makes it manageable for us and its bounding box annotations can be used to evaluate the tool localization, which is why we will mainly use it for the following experiments.
+The \emph{M2CAI16} dataset contains \num{2811} frames (\num{2248} for training and \num{563} for testing) gathered from the videos 61-76 in \emph{Cholec80}. Every frame is fully annotated with tool presence labels and bounding boxes. Its size makes it manageable for us and its bounding box annotations can be used to evaluate the tool localization, which is why we will mainly use it for the following experiments as a validation set.
 
 
 \begin{figure}[h]
@@ -60,7 +60,7 @@ The \emph{M2CAI16} dataset contains \num{2811} frames (\num{2248} for training a
 
 \section{Experimental Setups}
 
-In the following, we will define a set of standard parameters that can the be used as baseline to compare different parameter setups. All of them will have in common, that the model will be a fully convolutional neural network consisting of a backbone, an additional convolutional layer with (1$\times$1) kernel and a spatial pooling in the end. The stride of the last two convolutional layers of the backbone will vary. As optimizer we will use Stochastic Gradient Descent with momentum and weight decay. The learning rate will be reduced stepwise by a factor $\gamma$ and can be specified independently between the backbone (lr$_1$) and convolutional layer (lr$_2$). The train loss is calculated with class weights according to this formula
+In the following, we will define a set of standard parameters that can the be used as baseline to compare different parameter setups. All of them will have in common, that the model will be a fully convolutional neural network consisting of a backbone, an additional convolutional layer with (1$\times$1) kernel and spatial pooling in the end. The stride of the last two convolutional layers of the backbone will vary. As optimizer we will use Stochastic Gradient Descent with momentum and weight decay. The learning rate will be reduced stepwise by a factor $\gamma$ and can be specified independently between the backbone (lr$_1$) and convolutional layer (lr$_2$). The train loss is calculated with class weights according to this formula
 \[w_c = \frac{m}{F_c}\]
 where $w_c$ is the corresponding weight of class $c$, $m$ is the median frequency across all tools and $F_c$ the frequency of $c$ \citep{lstm}.
 
@@ -119,7 +119,7 @@ As can be seen, lr$_1$ should start 10 times higher and lr$_2$ 10 times lower, s
 
 What we can see in \ref{fig:gp_aps}, is that one hand the model with optimized parameters seems to train a lot faster and more stable. While the test loss of the standard model sinks slow and with large peaks in between, the optimized one sinks very fast and converges then. The AP of the detection already reaches its maximum at about 30 epochs, while the other one achieves that after about 50. This is a major improvement for us, as our computing resources or scarce and training one model takes several hours. Because of this improvement we feel comfortable to lower the number of epochs to 50 instead of 70, as not much progress is made anymore after this point.\\
 On the other hand, the optimized model also achieves a noticeable higher AP by about 6 percentage points for the detection and almost 12 for the localization.
-Figure \ref{fig:gp_distances} shows us these differences for each class. Its noticeable that in both models, the \emph{Grasper} has much lower scores than the other tools. We guess this is the case, because the \emph{Grasper} is often very small and easily confused with other artifacts, like seams or dried blood. The \emph{Bipolar} on the other hand achieves very high scores, probably because of its unique shape and color.\\ Besides an improvement in the AP, we can also see that the distances between the bounding boxes and peaks reduced noticeably, by about 1.5 percentage points of the image diagonal and even halved for the \emph{Hook}.\\
+Figure \ref{fig:gp_distances} shows us these differences for each class. It is noticeable that in both models, the \emph{Grasper} has much lower scores than the other tools. We guess this is the case, because the \emph{Grasper} is often very small and easily confused with other artifacts, like seams or dried blood. The \emph{Bipolar} on the other hand achieves very high scores, probably because of its unique shape and color.\\ Besides an improvement in the AP, we can also see that the distances between the bounding boxes and peaks reduced noticeably, by about 1.5 percentage points of the image diagonal and even halved for the \emph{Hook}.\\
 
 In \textbf{future experiments}, we will use this optimized parameter set for our standard model.
 
@@ -140,7 +140,7 @@ In the next experiment, we will evaluate the influence of the stride values in t
 	\end{tabular}
 \end{center}
 
-Disclaimer: With stride (x,y) we don't mean stride x across axis 0 and y across axis 1, but rather, (x,x) in the second-to-last conv. layer of the backbone and (y,y) in the last.\\
+Note: With stride (x,y) we don't mean stride x across axis 0 and y across axis 1, but rather, (x,x) in the second-to-last conv. layer of the backbone and (y,y) in the last.\\
 
 \cite{Vardazaryan} and \cite{lstm} chose (1,1) to increase the accuracy peaks in the heatmaps. We can see in \ref{fig:strides_aps} and \ref{fig:strides_distances}, if this worked for us, too.
 
@@ -223,7 +223,7 @@ Another small change we hoped could improve our results, was to pre-segment a sm
 	\label{fig:seg_images}
 \end{figure}
 
-Our idea, was that we have three pre-segmented images for every class (working time: 20 minutes), that we train as one batch after every epoch of training. This should help our model to find the right tool, respectively the correct region of the tool. Our results can be seen in \ref{fig:seg_aps} and \ref{fig:seg_distances}.\\
+Our idea was that we have three pre-segmented images for every class (working time: 20 minutes), that we train as one batch after every epoch of training. This should help our model to find the right tool, respectively the correct region of the tool. Our results can be seen in \ref{fig:seg_aps} and \ref{fig:seg_distances}.\\
 
 
 \begin{figure}[h]
@@ -250,7 +250,7 @@ Sadly, as can be seen theres barely any difference between the two results, so w
 \FloatBarrier
 \subsection{ChannelSwitcher}
 
-Our last experiment is based on the observation, that our tools are mostly gray, while everything around them has a dominant red channel. Our idea was, that if we randomly switch the color channels of the images during training, the model will be more likely to learn the features of not so much affected gray areas, instead of the strongly affected red areas.
+Our last experiment is based on the observation, that our tools are mostly gray, while everything around them has a dominant red channel. Our idea was, that if we randomly switch the color channels of the images during training, the model will be more likely to learn the features of not so much affected gray areas, instead of the strongly affected red areas. As can be seen in the following graphs, there has been no noticable effect.
 
 \begin{figure}[h]
 	\centering
