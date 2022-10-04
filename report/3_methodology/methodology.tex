@@ -73,7 +73,12 @@ The localization and classification of the tools is being determined via the hea
 \section{Training}
 
 The training was carried out using mini-batch stochastic gradient descent with different batch sizes, ranging from 2 to 50. We monitored both training and validation losses as well as average precision and accuracy.  After every iteration over the dataset we validated the training progress on a completely separate set.
-As mentioned earlier, contrary to what we were used to we looked at a multi-label-classification problem. This had to be taken into account when choosing a loss function. We went with the multi-label soft margin loss.
+As mentioned earlier, contrary to what we were used to we looked at a multi-label-classification problem. This had to be taken into account when choosing a loss function. We went with the multi-label soft margin loss, a weighted cross-entropy loss presented in equation \ref{Equ1}, where $k_c$ and $v_c$ are the ground truth and predicted tool presence for class $c$, $\sigma$ is the sigmoid-function and $W_c$ is the weight for class $c$. The weights serve as a counter-measure against the effect of class-imbalances (discussed in section 4.1).
+
+\begin{align}
+	Loss = \sum_{c=1}^C\frac{-1}{N}[W_ck_clog(\sigma(v_c)) + (1+k_c)log(1-\sigma(v_c))]\label{Equ1}
+\end{align}
+
 
 \subsection{Training workflow}
 
@@ -92,6 +97,6 @@ Apart from that we just had to try some options intuitively, especially which po
 
 \section{Quality metrics}
 
-We used the precision-recall-metric as well as the precision-recall-curve, the F1-score (that merely combines the precision- and recall-values), the area under the ROC-Curve, the average precision, the average distance between a bounding box centre and all predictions in percent of the diagonal length (for localization). The average precision metric was also used to interpret the localization performance. All these metrics were applicable, since we took care in balancing the classes, which is, at least for the classification part, an important prerequisite. Some of the metrics provide redundant information (especially true for the F1-score and the precision-recall-metric), although some of them are easier to interpret on the spot. But it does not seem to hurt to in doubt calculate more metrics than necessary.
+We used the precision-recall-metric as well as the precision-recall-curve, the F1-score (that merely combines the precision- and recall-values), the area under the PR-Curve, the average precision, the average distance between a bounding box centre and all predictions in percent of the diagonal length (for localization). The average precision metric was also used to interpret the localization performance. All these metrics were applicable, since we took care in balancing the classes, which is, at least for the classification part, an important prerequisite. Some of the metrics provide redundant information (especially true for the F1-score and the precision-recall-metric), although some of them are easier to interpret on the spot. But it does not seem to hurt to in doubt calculate more metrics than necessary.
 When it comes to assess the quality of the model, we mainly looked towards papers that covered similar problems. For instance, \cite{Vardazaryan} used average precision to evaluate the binary tool presence classification as well as the localization. We not only looked at these papers for inspiration, but also as a benchmark we wanted to achieve as well, meaning that average precision of over 90\% for all tools was the overall goal (as achieved by \cite{Vardazaryan}, \cite{endonet} and \cite{lstm}).
 
