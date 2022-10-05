@@ -273,6 +273,37 @@ Our last experiment is based on the observation, that our tools are mostly gray,
 
 
 \FloatBarrier
+\subsection{Visualization}
+
+In the last sections we have seen, that we could improve the model performance significantly. To get a better understanding, how the models outputs have changed, due to the improvements, we visualized a set of images together with their corresponding heatmaps and tool predictions. We can see in \ref{fig:tools_alt} and \ref{fig:tools_new}, that our optimized model has much more distinct peaks, while the original ones are very spread, smaller and often lying on tissue that is not a tool. 
+
+\begin{figure}[h]
+	\centering
+	\makebox[\linewidth][c]{
+		\begin{subfigure}[b]{1.3\textwidth}
+			\centering
+			\includegraphics[width=18cm]{4_experiments/images/visualizer_alt.png}
+		\end{subfigure}
+	}
+	\caption{(Original model) heatmaps, predicted tools (red dots), ground truth bounding boxes (blue)}
+	\label{fig:tools_alt}
+\end{figure}
+
+
+\begin{figure}[h]
+	\centering
+	\makebox[\linewidth][c]{
+		\begin{subfigure}[b]{1.3\textwidth}
+			\centering
+			\includegraphics[width=18cm]{4_experiments/images/visualizer.png}
+		\end{subfigure}
+	}
+	\caption{(Our model) heatmaps, predicted tools (red dots), ground truth bounding boxes (blue)}
+	\label{fig:tools_new}
+\end{figure}
+
+
+\FloatBarrier
 \subsection{SurgToolLoc}
 
 As already mentioned, we sadly missed the official challenge deadline by just a few days and couldn't let our model be tested on the official validation dataset. Nonetheless, we were eager to see how well our approach performs on the \emph{SurgToolLoc} dataset, so we created our own validation set, where we cared about that no frames from the same video occur in train and test at the same time. The results of our best model, the ResNet18 with optimized parameters and strides (2,2), can be seen in \ref{fig:st_ap} and \ref{fig:st_metrics}.
