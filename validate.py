@@ -48,8 +48,9 @@ def validate(config_file):
     print("Validating...")
     for i, data in enumerate(tqdm(val_dataset, total=len(val_dataset.dataloader))):
         output = model.test_minibatch(data, ap_tester)
-        visualizer.plot_validation_images(data['img'], output['crm'], data['target'], output['peak_list'],
-                                          itemgetter(*data['idx'])(ap_tester.all_bboxes))
+        # uncomment if you want to visualize the batch
+        # visualizer.plot_validation_images(data['img'], output['crm'], data['target'], output['peak_list'],
+        #                                   itemgetter(*data['idx'])(ap_tester.all_bboxes))
 
     AP = ap_tester.run(compute_AP_loc=True)
 

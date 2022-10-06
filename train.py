@@ -17,9 +17,8 @@ Input params:
         system-specific config file or a dictionary containing
         the system-specific, dataset-specific and 
         model-specific settings.
-    export: Whether to export the final model (default=True).
 """
-def train(config_file, export=False):
+def train(config_file):
     print('Reading config file...')
     configuration = parse_configuration(config_file)
     configuration['checkpoint_folder'] = os.path.join(configuration['model_params']['checkpoint_path'],
