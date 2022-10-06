@@ -1,6 +1,10 @@
 opencv-python
-torch
-albumentations
-visdom
 numpy
 matplotlib
+torchmetrics
+torch
+torchvision
+pillow
+scipy
+pandas
+tqdm
