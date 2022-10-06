@@ -1,7 +1,7 @@
 {
     "train_dataset_params": {
         "dataset_name": "m2cai16",
-        "dataset_path": "/media/fabian/DATA/m2cai16-tool-locations/m2cai2016",
+        "dataset_path": "/path/to/m2cai2016",
         "set": "trainval",
         "loader_params": {
             "batch_size": 5,
@@ -21,7 +21,7 @@
     },
     "val_dataset_params": {
         "dataset_name": "m2cai16",
-        "dataset_path": "/media/fabian/DATA/m2cai16-tool-locations/m2cai2016",
+        "dataset_path": "/path/to/m2cai2016",
         "set": "test",
         "loader_params": {
             "batch_size": 5,
@@ -48,22 +48,17 @@
             "modules": ["locmap"],
             "pooling": "minmaxpooling"
         },
-        "max_epochs": 150,
+        "max_epochs": 50,
         "optimizer": {
-            "lr": [0.1, 0.001],
+            "lr": [0.01, 0.01],
             "lr_milestones": [30, 45],
-            "gamma": 0.1,
+            "gamma": 0.45,
             "momentum": 0.9,
-            "weight_decay": 1e-4
+            "weight_decay": 1e-3
         },
-        "export_path": "",
-        "checkpoint_path": "/home/fabian/projects/python/SurgicalToolLocalization/checkpoints",
-        "load_checkpoint": "/home/fabian/projects/python/SurgicalToolLocalization/checkpoints/final_checkpoints/resnet18-locmap-minmaxpooling_S11.pth"
-    },
-    "visualization_params": {
-        "name": "2d segmentation"
+        "checkpoint_path": "/where/to/save/checkpoints",
+        "load_checkpoint": "/continue/with/checkpoint.pth"
     },
     "printout_freq": 5,
-    "model_update_freq": 1,
-    "checkpoint_freq": 10
+    "AP_loc_freq": 5
 }

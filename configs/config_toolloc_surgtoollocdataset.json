@@ -1,10 +1,10 @@
 {
     "train_dataset_params": {
         "dataset_name": "surgtoolloc",
-        "dataset_path": "/media/fabian/DATA/surgtoollocsubset/",
+        "dataset_path": "/path/to/surgtoollocsubset/",
         "set": "trainval",
         "loader_params": {
-            "batch_size": 2,
+            "batch_size": 20,
             "shuffle": true,
             "num_workers": 2,
             "pin_memory": true
@@ -20,10 +20,10 @@
     },
     "val_dataset_params": {
         "dataset_name": "surgtoolloc",
-        "dataset_path": "/media/fabian/DATA/surgtoollocsubset/",
+        "dataset_path": "/path/to/surgtoollocsubset/",
         "set": "test",
         "loader_params": {
-            "batch_size": 2,
+            "batch_size": 20,
             "shuffle": false,
             "num_workers": 2,
             "pin_memory": true
@@ -44,25 +44,19 @@
         },
         "structure": {
             "modules": ["locmap"],
-            "pooling": "minmax_pooling",
-            "multimaps": false
+            "pooling": "minmax_pooling"
         },
-        "max_epochs": 150,
+        "max_epochs": 50,
         "optimizer": {
-            "lr": [0.1, 0.001],
+            "lr": [0.01, 0.01],
             "lr_milestones": [30, 45],
-            "gamma": 0.1,
+            "gamma": 0.45,
             "momentum": 0.9,
-            "weight_decay": 1e-4
+            "weight_decay": 1e-3
         },
-        "export_path": "",
-        "checkpoint_path": "/home/fabian/projects/python/SurgicalToolLocalization/checkpoints",
-        "load_checkpoint": ""
-    },
-    "visualization_params": {
-        "name": "2d segmentation"
+        "checkpoint_path": "/where/to/save/checkpoints",
+        "load_checkpoint": "/continue/with/checkpoint.pth"
     },
     "printout_freq": 5,
-    "model_update_freq": 1,
-    "checkpoint_freq": 10
+    "AP_loc_freq": 5
 }

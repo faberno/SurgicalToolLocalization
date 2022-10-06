@@ -1,10 +1,10 @@
 {
     "train_dataset_params": {
-        "dataset_name": "m2cai16",
-        "dataset_path": "/content/m2cai16-tool-locations/m2cai2016",
+        "dataset_name": "cholec80",
+        "dataset_path": "/path/to/cholec80_sub",
         "set": "trainval",
         "loader_params": {
-            "batch_size": 50,
+            "batch_size": 5,
             "shuffle": true,
             "num_workers": 2,
             "pin_memory": true
@@ -20,12 +20,12 @@
         }
     },
     "val_dataset_params": {
-        "dataset_name": "m2cai16",
-        "dataset_path": "/content/m2cai16-tool-locations/m2cai2016",
+        "dataset_name": "cholec80",
+        "dataset_path": "/path/to/cholec80_sub",
         "set": "test",
         "loader_params": {
-            "batch_size": 50,
-            "shuffle": false,
+            "batch_size": 5,
+            "shuffle": true,
             "num_workers": 2,
             "pin_memory": true
         },
@@ -41,31 +41,24 @@
         "backbone": {
             "name": "resnet18",
             "options": {
-                "strides": [2, 2]
+                "strides": [1, 1]
             }
         },
         "structure": {
             "modules": ["locmap"],
-            "pooling": "minmaxpooling",
-            "multimaps": false
+            "pooling": "minmaxpooling"
         },
-        "max_epochs": 100,
+        "max_epochs": 120,
         "optimizer": {
-            "lr": [0.1, 0.001],
-            "lr_milestones": [50, 80],
-            "gamma": 0.1,
+            "lr": [0.01, 0.01],
+            "lr_milestones": [60, 100],
+            "gamma": 0.45,
             "momentum": 0.9,
-            "weight_decay": 1e-4
+            "weight_decay": 1e-3
         },
-        "export_path": "",
-        "checkpoint_path": "/content/drive/MyDrive/checkpoints",
-        "load_checkpoint": ""
-    },
-    "visualization_params": {
-        "name": "2d segmentation"
+        "checkpoint_path": "/where/to/save/checkpoints",
+        "load_checkpoint": "/continue/with/checkpoint.pth"
     },
     "printout_freq": 5,
-    "model_update_freq": 1,
-    "checkpoint_freq": 10,
     "AP_loc_freq": 5
 }
