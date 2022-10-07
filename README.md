@@ -91,7 +91,7 @@ First start with the structure:
 * backbone.name: resnet{18, 34, 50, 101}, alexnet, vgg{11, 11_bn, 16_bn}
 * strides: stride of the last two conv layers of the backbone (used to control the heatmap size)
 * modules: list of modules to include after the backbone (right now only locmap exists, e.g. a lstm layer could be included here later)
-* pooling: pooling technique to calculate the class scores from the heatmap (recommded: minmaxpooling)
+* pooling: pooling technique to calculate the class scores from the heatmap (recommended: minmaxpooling)
 ```
     "model_params": {
         "model_name": "fullyconv",
